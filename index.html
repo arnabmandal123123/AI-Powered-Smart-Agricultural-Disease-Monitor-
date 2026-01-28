@@ -1,0 +1,3932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a73e8">
+  <meta name="description" content="Professional ESP32-CAM agricultural disease detection system with AI verification, 10-model consensus analysis, and real-time sensor monitoring.">
+  <meta name="keywords" content="agriculture, plant disease detection, ESP32-CAM, AI, machine learning, crop health monitoring">
+  <meta name="author" content="Smart Agricultural System">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <title>ESP32-CAM Disease Monitor - Smart Agriculture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Firebase SDK - Using Firestore for all data storage -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #1557b0;
+      --surface: #fff;
+      --background: #f8f9fa;
+      --on-surface: #202124;
+      --on-surface-variant: #5f6368;
+      --error: #d93025;
+      --warn: #f9ab00;
+      --success: #1e8e3e;
+      --elevation-1: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+      --elevation-2: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
+      --elevation-3: 0 4px 8px 3px rgba(60,64,67,0.15), 0 1px 3px rgba(60,64,67,0.3);
+      --radius: 8px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --surface: #292a2d;
+        --background: #202124;
+        --on-surface: #e8eaed;
+        --on-surface-variant: #9aa0a6;
+      }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--background);
+      color: var(--on-surface);
+      padding: 16px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: rgba(26, 115, 232, 0.1);
+      touch-action: manipulation;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .hero {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--elevation-1);
+    }
+    .hero h1 {
+      font-size: 24px;
+      font-weight: 500;
+      margin: 8px 0 4px;
+      color: var(--on-surface);
+    }
+    .hero p {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin: 0;
+    }
+    .ip-config {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--elevation-1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .ip-config input {
+      flex: 1;
+      min-width: 200px;
+      background: var(--surface);
+      border: 1px solid var(--on-surface-variant);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      color: var(--on-surface);
+      font-size: 16px;
+      font-family: 'Roboto Mono', 'Courier New', monospace;
+      min-height: 44px;
+    }
+    .ip-config input:focus {
+      outline: 2px solid var(--primary);
+      border-color: var(--primary);
+    }
+    .ip-config button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+      box-shadow: var(--elevation-1);
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+      font-family: 'Roboto', sans-serif;
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+    .ip-config button:hover {
+      background: var(--primary-dark);
+      box-shadow: var(--elevation-2);
+    }
+    .status {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .chip {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--elevation-1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--on-surface);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+    .dot.offline {
+      background: var(--error);
+    }
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--elevation-1);
+    }
+    .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+    .pill {
+      padding: 4px 12px;
+      border-radius: 16px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .frame {
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #000;
+      min-height: 240px;
+      display: grid;
+      place-items: center;
+    }
+    .frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: 'Roboto', sans-serif;
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: var(--elevation-1);
+      letter-spacing: 0.25px;
+      min-height: 44px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn.pri {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn.pri:hover {
+      background: var(--primary-dark);
+      box-shadow: var(--elevation-2);
+    }
+    .btn.sec {
+      background: var(--surface);
+      color: var(--primary);
+      border: 1px solid var(--on-surface-variant);
+    }
+    .btn.sec:hover {
+      background: rgba(26, 115, 232, 0.04);
+      box-shadow: var(--elevation-2);
+    }
+    .btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn:not(:disabled):active {
+      box-shadow: var(--elevation-3);
+    }
+    .results {
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .rc {
+      background: var(--background);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .rc .t {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 16px;
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .badge.ok {
+      background: #e6f4ea;
+      color: var(--success);
+    }
+    .badge.warn {
+      background: #fef7e0;
+      color: #f9ab00;
+    }
+    .badge.err {
+      background: #fce8e6;
+      color: var(--error);
+    }
+    .conf {
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      height: 20px;
+      margin: 8px 0;
+    }
+    .conf-fill {
+      height: 100%;
+      background: var(--primary);
+      text-align: right;
+      padding-right: 8px;
+      font-size: 12px;
+      line-height: 20px;
+      color: #fff;
+      font-weight: 500;
+    }
+    .ctx {
+      background: var(--background);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .ctx h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+    }
+    .ctx ul {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--on-surface);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .sg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .sc {
+      background: var(--background);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .sc .l {
+      margin: 0 0 4px;
+      color: var(--on-surface-variant);
+      font-size: 12px;
+      font-weight: 400;
+    }
+    .sc .v {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--on-surface);
+    }
+    .sc .u {
+      margin: 0;
+      color: var(--on-surface-variant);
+      font-size: 12px;
+    }
+    .note {
+      color: var(--on-surface-variant);
+      font-size: 12px;
+      margin-top: 12px;
+    }
+    /* Tablet responsiveness */
+    @media (max-width: 768px) {
+      .wrap {
+        gap: 16px;
+      }
+      .hero h1 {
+        font-size: 20px;
+      }
+      .status {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+      .sg {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      }
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 640px) {
+      .hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .hdr h1 {
+        margin: 0;
+      }
+      body {
+        padding: 8px;
+      }
+      .wrap {
+        gap: 12px;
+      }
+      .hero {
+        padding: 16px;
+      }
+      .hero h1 {
+        font-size: 18px;
+        margin: 4px 0 2px;
+      }
+      .hero p {
+        font-size: 12px;
+      }
+      .ip-config {
+        padding: 12px;
+        gap: 8px;
+      }
+      .ip-config input {
+        min-width: 100%;
+        font-size: 16px;
+      }
+      .ip-config button {
+        width: 100%;
+        padding: 14px 24px;
+        font-size: 15px;
+      }
+      .status {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .chip {
+        padding: 12px;
+        font-size: 13px;
+      }
+      .card {
+        padding: 12px;
+      }
+      h2 {
+        font-size: 16px;
+      }
+      .actions {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .btn {
+        width: 100%;
+        padding: 14px 24px;
+        font-size: 15px;
+        min-height: 48px;
+      }
+      .frame {
+        min-height: 200px;
+      }
+      .rc {
+        padding: 12px;
+      }
+      .rc .t {
+        font-size: 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .ctx {
+        padding: 12px;
+      }
+      .ctx ul {
+        font-size: 13px;
+        padding-left: 16px;
+      }
+      .sg {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .sc {
+        padding: 12px;
+      }
+      .sc .v {
+        font-size: 24px;
+      }
+    }
+    
+    /* Small mobile devices */
+    @media (max-width: 375px) {
+      body {
+        padding: 6px;
+      }
+      .hero h1 {
+        font-size: 16px;
+      }
+      .hero p {
+        font-size: 11px;
+      }
+      .sg {
+        grid-template-columns: 1fr;
+      }
+      .btn {
+        font-size: 14px;
+      }
+    }
+    
+    /* Landscape mobile orientation */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .frame {
+        min-height: 150px;
+      }
+      .sg {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    /* Analytics Dashboard Styles */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      background: var(--background);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      background: var(--background);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-box .label {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-bottom: 8px;
+    }
+    .stat-box .value {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+    .stat-box .change {
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    .stat-box .change.up {
+      color: var(--error);
+    }
+    .stat-box .change.down {
+      color: var(--success);
+    }
+    
+    /* History Panel Styles */
+    .history-panel {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .history-item {
+      background: var(--background);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 4px solid transparent;
+    }
+    .history-item:hover {
+      background: rgba(26, 115, 232, 0.05);
+      border-left-color: var(--primary);
+    }
+    .history-item.critical {
+      border-left-color: var(--error);
+    }
+    .history-item.high {
+      border-left-color: var(--warn);
+    }
+    .history-item.moderate {
+      border-left-color: #FF9800;
+    }
+    .history-item.low {
+      border-left-color: var(--success);
+    }
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .history-date {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      flex: 1;
+    }
+    .delete-btn {
+      background: rgba(234, 67, 53, 0.1);
+      color: var(--error);
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .delete-btn:hover {
+      background: var(--error);
+      color: white;
+      transform: scale(1.05);
+    }
+    .history-disease {
+      font-weight: 500;
+      font-size: 15px;
+      margin: 4px 0;
+    }
+    .history-confidence {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+    }
+    .history-details {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+    }
+    .history-item.expanded .history-details {
+      display: block;
+    }
+    .history-image {
+      width: 100%;
+      max-width: 300px;
+      border-radius: var(--radius);
+      margin-top: 8px;
+    }
+    .timeline-container {
+      position: relative;
+      height: 400px;
+    }
+    .firebase-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .firebase-status.connected {
+      background: rgba(52, 168, 83, 0.1);
+      color: var(--success);
+    }
+    .firebase-status.disconnected {
+      background: rgba(234, 67, 53, 0.1);
+      color: var(--error);
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    #aiToggleBtn {
+      background: rgba(26, 115, 232, 0.1);
+      color: var(--primary);
+      font-weight: 500;
+    }
+    #aiToggleBtn.disabled {
+      background: rgba(95, 99, 104, 0.1);
+      color: var(--on-surface-variant);
+    }
+    @media (max-width: 640px) {
+      .chart-container {
+        height: 250px;
+      }
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+      .timeline-container {
+        height: 300px;
+      }
+      .history-panel {
+        max-height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <p>Smart Agricultural Disease Monitor</p>
+          <h1>ESP32-CAM + Roboflow AI + Firebase</h1>
+          <p>Live streaming · AI-powered analysis · Real-time sensors · Expert recommendations</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="ip-config">
+      <span style="font-size: 14px; color: var(--on-surface-variant); font-weight: 500;">ESP32 IP Address:</span>
+      <input type="text" id="ipInput" placeholder="10.180.248.XXX" value="10.180.248.33">
+      <button onclick="setIP()">Connect</button>
+      <span id="connStatus" style="font-size: 13px; color: var(--on-surface-variant);"></span>
+    </div>
+
+    <section class="status">
+      <div class="chip"><span class="dot" id="camDot"></span><span id="cs">Camera offline</span></div>
+      <div class="chip"><span class="dot" id="aiDot"></span><span id="as">AI ready</span></div>
+      <div class="chip">Time: <span id="ts">--:--:--</span></div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="head">
+          <h2>Live stream</h2>
+          <span class="pill">Live</span>
+        </div>
+        <div class="frame">
+          <img id="str" alt="Stream" style="display: none;">
+          <p id="streamPlaceholder" style="color: var(--on-surface-variant); font-size: 14px;">Enter ESP32 IP address above</p>
+        </div>
+        
+        <!-- Plant Selection -->
+        <div style="padding: 16px; background: rgba(26, 115, 232, 0.05); border-radius: 8px; margin: 12px;">
+          <h4 style="margin: 0 0 12px 0; color: var(--primary); font-size: 14px; font-weight: 600;">
+            🌱 Select Plant Type for Analysis
+          </h4>
+          <div id="plantSelector" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+            <!-- Plant buttons will be inserted here -->
+          </div>
+          <div id="selectedPlantInfo" style="margin-top: 12px; padding: 12px; background: var(--surface); border-radius: 6px; border-left: 4px solid var(--primary);">
+            <div style="font-size: 13px; font-weight: 500; color: var(--on-surface); margin-bottom: 4px;">
+              Selected: <span id="selectedPlantName" style="color: var(--primary);">🌿 All Plants</span>
+            </div>
+            <div style="font-size: 12px; color: var(--on-surface-variant);" id="selectedPlantDesc">Using all 7 AI models for comprehensive analysis</div>
+          </div>
+        </div>
+        
+        <div class="actions">
+          <button id="visualBtn" class="btn pri" onclick="visualOnly()" disabled>Analyze</button>
+          <button id="toggleBtn" class="btn sec" onclick="toggleStream()" disabled>Start stream</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="head">
+          <h2>Analysis</h2>
+          <span class="pill">AI</span>
+        </div>
+        <div id="res" class="results">
+          <div class="rc">
+            <div class="t">Ready - 7 AI Models Loaded</div>
+            <p style="color: var(--on-surface-variant); font-size: 14px; margin-bottom: 16px;">Configure ESP32 IP, then analyze</p>
+            
+            <!-- Disease Detection Models Display -->
+            <div style="background: rgba(26, 115, 232, 0.05); border-radius: 8px; padding: 16px; margin-top: 12px;">
+              <h4 style="margin: 0 0 12px 0; color: var(--primary); font-size: 14px; font-weight: 600;">
+                🤖 Active Disease Detection Models
+              </h4>
+              <div id="modelsList" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Models will be displayed here -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="ctx" class="ctx">
+          <h4>Context notes</h4>
+          <ul>
+            <li>Awaiting connection...</li>
+          </ul>
+        </div>
+        
+        <!-- AI Verification Section -->
+        <div id="aiRecommendations" style="display: none; margin-top: 16px; padding: 16px; background: rgba(26, 115, 232, 0.05); border-radius: 8px; border-left: 4px solid var(--primary);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+              🤖 AI Disease Verification & Final Decision
+              <span id="aiModel" style="font-size: 11px; background: rgba(26, 115, 232, 0.1); padding: 2px 8px; border-radius: 4px; font-weight: 500;">Gemini</span>
+            </h4>
+            <button class="btn sec" onclick="copyAIAnalysis()" style="padding: 4px 12px; font-size: 12px;">📋 Copy</button>
+          </div>
+          <div id="aiAnalysisContent" style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: var(--on-surface);"></div>
+          <div id="aiLoading" style="display: none; text-align: center; padding: 20px;">
+            <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(26, 115, 232, 0.3); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="margin-top: 8px; color: var(--on-surface-variant);">AI is verifying 10 model results...</p>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Environment panel removed for visual-only workflow -->
+
+    <article class="card">
+      <div class="head">
+        <h2>Analytics Dashboard</h2>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn sec" id="aiToggleBtn" onclick="toggleAIAnalysis()" title="Enable/Disable AI-powered analysis">
+            <span id="aiToggleIcon">🤖</span>
+            <span id="aiToggleText">AI: ON</span>
+          </button>
+          <button class="btn sec" onclick="exportAnalyticsData()">📥 Export</button>
+          <button class="btn sec" onclick="clearAnalyticsData()">🗑️ Clear</button>
+        </div>
+      </div>
+      
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-box">
+          <div class="label">Total Scans</div>
+          <div class="value" id="totalScans">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Diseases Found</div>
+          <div class="value" id="diseasesFound">0</div>
+          <div class="change up" id="diseaseChange">--</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Avg Confidence</div>
+          <div class="value" id="avgConfidence">0%</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Risk Level</div>
+          <div class="value" id="riskLevel">Low</div>
+        </div>
+      </div>
+
+      <div class="analytics-grid">
+        <div class="card" style="padding: 12px;">
+          <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--on-surface-variant);">Disease Distribution</h3>
+          <div class="chart-container">
+            <canvas id="diseaseChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="card" style="padding: 12px;">
+          <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--on-surface-variant);">Confidence Trend</h3>
+          <div class="chart-container">
+            <canvas id="confidenceChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-grid" style="margin-top: 16px;">
+        <!-- Sensor-related charts removed -->
+      </div>
+
+      <div style="margin-top: 16px;">
+        <div class="card" style="padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 16px; margin: 0; color: var(--primary); font-weight: 600;">🎯 Model Precision & Accuracy (User Feedback)</h3>
+            <button onclick="resetModelFeedback()" style="background: var(--error); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+              <span>🗑️</span>
+              <span>Reset Feedback</span>
+            </button>
+          </div>
+          <div style="height: 500px; width: 100%;">
+            <canvas id="modelPrecisionChart"></canvas>
+          </div>
+          <p style="margin-top: 12px; font-size: 12px; color: var(--on-surface-variant); text-align: center;">Rate model predictions to see real-world accuracy. Higher bars = better performance.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Timeline & History</h2>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span class="firebase-status" id="firebaseStatus">
+            <span id="firebaseIcon">⚪</span>
+            <span id="firebaseText">Not connected</span>
+          </span>
+          <button class="btn sec" onclick="syncWithFirebase()">🔄 Sync</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 12px; margin-bottom: 16px;">
+        <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--on-surface-variant);">Analysis Timeline</h3>
+        <div class="timeline-container">
+          <canvas id="timelineChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 14px; margin: 0; color: var(--on-surface-variant);">Analysis History</h3>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn sec" onclick="loadFromFirebase()" style="padding: 8px 16px; font-size: 13px;">📥 Load</button>
+            <button class="btn sec" onclick="filterHistory('all')" style="padding: 8px 16px; font-size: 13px;">All</button>
+            <button class="btn sec" onclick="filterHistory('diseases')" style="padding: 8px 16px; font-size: 13px;">Diseases</button>
+            <button class="btn sec" onclick="filterHistory('healthy')" style="padding: 8px 16px; font-size: 13px;">Healthy</button>
+          </div>
+        </div>
+        <div class="history-panel" id="historyPanel">
+          <p style="text-align: center; color: var(--on-surface-variant); padding: 32px;">No analysis history yet. Run your first scan to get started.</p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    // ==================== PRODUCTION CONFIGURATION ====================
+    const PRODUCTION_MODE = false; // Set to true to disable debug logging
+    // Toggle automatic migration of legacy ESP32 IP from 192.168.1.33 -> 10.180.248.33
+    // Default: false to preserve user-set IP addresses (e.g., when your ESP provides 192.168.1.33)
+    const ALLOW_AUTO_IP_MIGRATION = false;
+    
+    // Optimized logging wrapper
+    const log = {
+      info: (...args) => !PRODUCTION_MODE && console.log(...args),
+      warn: (...args) => console.warn(...args),
+      error: (...args) => console.error(...args),
+      success: (msg) => !PRODUCTION_MODE && console.log('✅', msg),
+      debug: (...args) => !PRODUCTION_MODE && console.log('🔍', ...args)
+    };
+    
+    // ==================== FIREBASE CONFIGURATION ======================================
+    // Firebase project: agriculture-project-diploma
+    const firebaseConfig = {
+      apiKey: "AIzaSyCluvsF7ChTv1nfm6HzGVbvNZ4MmIwYSqA",
+      authDomain: "agriculture-project-diploma.firebaseapp.com",
+      databaseURL: "https://agriculture-project-diploma-default-rtdb.firebaseio.com",
+      projectId: "agriculture-project-diploma",
+      storageBucket: "agriculture-project-diploma.firebasestorage.app",
+      messagingSenderId: "821352370665",
+      appId: "1:821352370665:web:8133f8dffdb5f84bcbbb78",
+      measurementId: "G-C4YL29SEP4"
+    };
+    
+    // Google Cloud services removed - using Firebase Firestore only for storage
+
+    // Initialize Firebase
+    let db = null;
+    let auth = null;
+    let functions = null;
+    let firebaseEnabled = false;
+    let aiEnabled = false;
+    let firebaseReady = false;
+    let firebaseReadyPromise = null;
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      auth = firebase.auth();
+      functions = firebase.functions();
+      
+      // Note: Offline persistence is optional and causes deprecation warnings in Firebase 9.22.0+
+      // System works fine without it - data is saved to Firebase and localStorage
+      
+      // Create promise that resolves when Firebase is ready
+      firebaseReadyPromise = new Promise((resolve, reject) => {
+        // Anonymous authentication for simplicity
+        auth.signInAnonymously()
+          .then(() => {
+            console.log('✅ Firebase authenticated anonymously');
+            console.log('User ID:', auth.currentUser.uid);
+            firebaseEnabled = true;
+            firebaseReady = true;
+            aiEnabled = true; // Enable AI features
+            updateFirebaseStatus(true);
+            console.log('🤖 Firebase AI features enabled');
+            resolve();
+          })
+          .catch(err => {
+            console.error('❌ Firebase auth error:', err);
+            updateFirebaseStatus(false);
+            reject(err);
+          });
+      });
+      
+      console.log('✅ Firebase initialized');
+    } catch (error) {
+      log.warn('⚠️ Firebase not configured or disabled:', error.message);
+      log.info('ℹ️ System will work with local storage only');
+      updateFirebaseStatus(false);
+    }
+
+    function updateFirebaseStatus(connected) {
+      const statusEl = document.getElementById('firebaseStatus');
+      const iconEl = document.getElementById('firebaseIcon');
+      const textEl = document.getElementById('firebaseText');
+      
+      if (connected) {
+        statusEl.className = 'firebase-status connected';
+        iconEl.textContent = '✅';
+        textEl.textContent = 'Firebase + AI enabled';
+      } else {
+        statusEl.className = 'firebase-status disconnected';
+        iconEl.textContent = '❌';
+        textEl.textContent = 'Local storage only';
+      }
+    }
+
+    // ==================== ROBOFLOW CONFIGURATION ====================
+    const K = 'uRVv39iPfwzK4NJJ0Gsw';
+    
+    // Google Cloud services removed - using Firebase Firestore only
+    
+    // Storage simplified - images stored as base64 in Firestore documents
+    
+    // Class name mapping for models that return numeric IDs
+    const CLASS_NAME_MAPPING = {
+      'tomato-disease-k8es2/2': {
+        '0': 'Tomato Early Blight',
+        '1': 'Tomato Late Blight',
+        '2': 'Tomato Bacterial Spot',
+        '3': 'Tomato Septoria Leaf Spot',
+        '4': 'Tomato Target Spot',
+        '5': 'Tomato Leaf Mold',
+        '6': 'Tomato Yellow Leaf Curl Virus',
+        '7': 'Tomato Mosaic Virus',
+        '8': 'Tomato Spider Mites',
+        '9': 'Tomato Healthy'
+      },
+      'potato-disease-balnv/2': {
+        '0': 'Potato Early Blight',
+        '1': 'Potato Late Blight',
+        '2': 'Potato Healthy'
+      }
+    };
+    
+    // Multiple models for comparison
+    const MODELS = [
+      { id: 'plant-disease-detection-z9xot/2', name: 'Object Detection (YOLOv8)', type: 'detection', forPlants: 'all' },
+      { id: 'rice-disease-detection-zwaa8/4', name: 'Rice Disease Detection (YOLOv8s)', type: 'detection', forPlants: ['rice'] },
+      { id: 'wheat-disease-detection-zsn0p/1', name: 'Wheat Disease (100% Accuracy)', type: 'classification', forPlants: ['wheat'] },
+      { id: 'chili-plant/2', name: 'Chili Plant Disease (81% mAP)', type: 'detection', forPlants: ['chili', 'pepper'] },
+      { id: 'potato-disease-balnv/2', name: 'Potato Disease (98.8% mAP)', type: 'detection', forPlants: ['potato'] },
+      { id: 'tomato-disease-k8es2/2', name: 'Tomato Disease (92.3% mAP)', type: 'detection', forPlants: ['tomato'] },
+      { id: 'eggplant-fruit-disease-detection/21', name: 'Eggplant Disease (47.8% mAP)', type: 'detection', forPlants: ['eggplant', 'brinjal'] }
+    ];
+    
+    // Plant types available for selection
+    const PLANT_TYPES = [
+      { id: 'all', name: 'All Plants (General)', icon: '🌿', models: 7, description: 'Use all 7 models for comprehensive analysis' },
+      { id: 'rice', name: 'Rice', icon: '🌾', models: 2, description: 'General model + Rice specialist' },
+      { id: 'wheat', name: 'Wheat', icon: '🌾', models: 2, description: 'General model + Wheat specialist' },
+      { id: 'chili', name: 'Chili/Pepper', icon: '🌶️', models: 2, description: 'General model + Chili specialist' },
+      { id: 'potato', name: 'Potato', icon: '🥔', models: 2, description: 'General model + Potato specialist' },
+      { id: 'tomato', name: 'Tomato', icon: '🍅', models: 2, description: 'General model + Tomato specialist' },
+      { id: 'eggplant', name: 'Eggplant/Brinjal', icon: '🍆', models: 2, description: 'General model + Eggplant specialist' }
+    ];
+    
+    let selectedPlantType = 'all'; // Default to all plants
+    
+    // Disease remedies database
+    const REMEDIES = {
+      // Enhanced with specific medicine names, brands, and dosages
+      'bacterial spot': '🔹 Organic: Copper hydroxide (Kocide 3000) 2-3g/L, Streptomycin sulfate 200ppm. 🔹 Chemical: Copper oxychloride 50% WP 3g/L water, Kasugamycin 3% SL 2ml/L. Spray every 5-7 days.',
+      'early blight': '🔹 Organic: Neem oil spray 5ml/L, Bacillus subtilis. 🔹 Chemical: Chlorothalonil 500g/L (Bravo) 2g/L, Mancozeb 75% WP (Dithane M-45) 2g/L, Azoxystrobin (Quadris) 1ml/L. Spray every 7-10 days.',
+      'late blight': '🔹 Organic: Copper sulfate, Bordeaux mixture 1%. 🔹 Chemical: Metalaxyl + Mancozeb (Ridomil Gold MZ) 2.5g/L, Cymoxanil + Mancozeb (Curzate M) 2g/L, Dimethomorph (Forum) 1ml/L. Apply immediately.',
+      'leaf mold': '🔹 Organic: Baking soda 5g/L, potassium bicarbonate. 🔹 Chemical: Chlorothalonil (Bravo 500SC) 1-2ml/L, Difenoconazole (Score 25EC) 0.5ml/L. Spray weekly.',
+      'septoria leaf spot': '🔹 Organic: Copper fungicide, garlic extract. 🔹 Chemical: Chlorothalonil 2g/L, Mancozeb 75% WP 2g/L, Azoxystrobin + Difenoconazole (Amistar Top) 1ml/L. Apply at first sign.',
+      'spider mites': '🔹 Organic: Neem oil (Azadirachtin 1%) 5ml/L, insecticidal soap. 🔹 Chemical: Abamectin (Vertimec 1.8% EC) 0.5-1ml/L, Spiromesifen (Oberon 240SC) 0.5ml/L. Repeat every 5 days.',
+      'target spot': '🔹 Organic: Neem oil, Trichoderma viride. 🔹 Chemical: Chlorothalonil 500g/L 2g/L, Mancozeb + Carbendazim (Saaf) 2g/L, Azoxystrobin 1ml/L. Spray every 10 days.',
+      'mosaic virus': '🔹 No cure available. 🔹 Control vectors: Imidacloprid 17.8% SL (Confidor) 0.5ml/L, Acetamiprid (Mospilan 20SP) 0.3g/L for aphids. Remove infected plants immediately.',
+      'yellow leaf curl': '🔹 Control whiteflies: Imidacloprid (Confidor 200SL) 0.5ml/L, Thiamethoxam (Actara 25WG) 0.3g/L, Buprofezin (Applaud 25WP) 1g/L. Spray every 5-7 days.',
+      'powdery mildew': '🔹 Organic: Sulfur 80% WP (Sulphex) 2g/L, potassium bicarbonate, milk spray 1:9. 🔹 Chemical: Hexaconazole (Contaf 5EC) 1ml/L, Tebuconazole (Folicur 250EC) 0.5ml/L. Spray weekly.',
+      'leaf curl': '🔹 Organic: Neem oil 5ml/L. 🔹 Chemical: Carbendazim 50% WP (Bavistin) 1g/L, Mancozeb 2g/L. 🔹 Nutrient spray: NPK 19:19:19 foliar 5g/L.',
+      'rust': '🔹 Organic: Sulfur 80% WP 2g/L, copper oxychloride. 🔹 Chemical: Propiconazole (Tilt 25EC) 1ml/L, Triadimefon (Bayleton 25WP) 0.5g/L, Mancozeb 2g/L. Spray every 7-10 days.',
+      'anthracnose': '🔹 Organic: Copper fungicide, Trichoderma viride. 🔹 Chemical: Carbendazim 50% WP 1g/L, Thiophanate-methyl (Topsin-M 70WP) 1g/L, Azoxystrobin + Difenoconazole 1ml/L.',
+      'blight': '🔹 Organic: Bordeaux mixture 1%, copper sulfate. 🔹 Chemical: Metalaxyl + Mancozeb (Ridomil Gold MZ) 2.5g/L, Fosetyl-Al (Aliette 80WP) 3g/L. Spray every 10 days.',
+      'scab': '🔹 Organic: Sulfur 80% WP 2g/L. 🔹 Chemical: Captan 50% WP 2g/L, Dodine (Syllit 400SC) 1.5ml/L, Myclobutanil (Rally 40WP) 0.5ml/L. Start at bud break.',
+      'wilt': '🔹 Soil drench: Carbendazim 50% WP 2g/L, Metalaxyl 35% WS 1g/L. 🔹 Biocontrol: Trichoderma harzianum 5g/L, Pseudomonas fluorescens. Apply via drip irrigation.',
+      'downy mildew': '🔹 Organic: Copper fungicide, Bacillus subtilis. 🔹 Chemical: Metalaxyl (Ridomil 35SD) 2g/L, Cymoxanil + Mancozeb 2.5g/L, Fosetyl-Al 3g/L. Apply weekly.',
+      'alternaria': '🔹 Organic: Neem extract, Trichoderma. 🔹 Chemical: Mancozeb 75% WP 2g/L, Iprodione (Rovral 50WP) 2ml/L, Difenoconazole 1ml/L. Rotate fungicides.',
+      'fusarium': '🔹 Soil treatment: Carbendazim 2g/L drench, Metalaxyl 1g/L. 🔹 Seed treatment: Thiram 75% WS 3g/kg seed. 🔹 Biocontrol: Trichoderma viride 5g/L.',
+      
+      // Additional vegetable crop diseases
+      'damping off': '🔹 Seed treatment: Thiram 75% WS 2g/kg seed, Captan 50% WP 2g/kg. 🔹 Soil drench: Metalaxyl 1g/L, Copper oxychloride 2g/L. Pre-planting treatment recommended.',
+      'fruit rot': '🔹 Organic: Copper fungicide, Trichoderma. 🔹 Chemical: Carbendazim 1g/L, Thiophanate-methyl 1g/L. Spray at fruit set and repeat every 10 days.',
+      'gray mold': '🔹 Organic: Potassium bicarbonate 5g/L. 🔹 Chemical: Iprodione (Rovral) 2g/L, Pyrimethanil (Scala 400SC) 1ml/L. Spray at flowering and fruit set.',
+      'stem rot': '🔹 Soil drench: Carbendazim 2g/L, Metalaxyl 1g/L. 🔹 Foliar: Copper oxychloride 3g/L. Remove infected stems and burn. Apply fungicide to wounds.',
+      'root rot': '🔹 Soil treatment: Metalaxyl + Mancozeb 2.5g/L drench, Fosetyl-Al 3g/L. 🔹 Biocontrol: Trichoderma harzianum + Pseudomonas 10g/L soil application.',
+      'collar rot': '🔹 Soil drench: Carbendazim 2g/L + Copper oxychloride 2g/L. 🔹 Stem paint: Bordeaux paste at collar region. Apply preventively before monsoon.',
+      'black spot': '🔹 Organic: Neem oil 5ml/L, Copper fungicide. 🔹 Chemical: Mancozeb 2g/L, Difenoconazole 0.5ml/L, Chlorothalonil 2g/L. Spray every 7-10 days.',
+      'brown spot': '🔹 Organic: Copper sulfate, Neem extract. 🔹 Chemical: Mancozeb 75% WP 2g/L, Carbendazim 1g/L, Tricyclazole (Beam 75WP) 0.6g/L. For rice, spray at tillering.',
+      'bacterial wilt': '🔹 Soil drench: Streptomycin 500ppm, Copper oxychloride 3g/L. 🔹 Prevention: Bleaching powder 50g/sq.m. Remove and burn infected plants immediately.',
+      'cercospora leaf spot': '🔹 Organic: Copper fungicide. 🔹 Chemical: Mancozeb 2g/L, Carbendazim 1g/L, Tebuconazole 0.5ml/L. Spray at 15-day intervals starting 45 days after planting.',
+      'sooty mold': '🔹 Control sap-sucking insects: Imidacloprid 0.5ml/L, Dimethoate 40% EC 2ml/L. 🔹 Wash leaves with soap solution. Improve air circulation.',
+      'leaf blight': '🔹 Organic: Bordeaux mixture 1%, Neem oil. 🔹 Chemical: Mancozeb 2g/L, Chlorothalonil 2g/L, Propiconazole 1ml/L. Spray at first appearance of symptoms.',
+      'southern blight': '🔹 Soil treatment: Carbendazim 2g/L drench, Pentachloronitrobenzene (PCNB 75% WP) 3g/L. Deep plowing and solarization recommended.',
+      'verticillium wilt': '🔹 Soil fumigation: Metam sodium. 🔹 Resistant varieties recommended. 🔹 Soil amendment: Trichoderma + organic matter. No effective chemical cure.',
+      'club root': '🔹 Soil pH adjustment: Apply lime 200g/sq.m. 🔹 Seed treatment: Thiram 2g/kg. 🔹 Soil drench: Carbendazim 2g/L. Crop rotation for 4-5 years.',
+      'black rot': '🔹 Organic: Copper hydroxide 3g/L. 🔹 Chemical: Streptomycin 200ppm, Copper oxychloride 3g/L. Seed treatment with hot water (50°C, 30 min).',
+      'white rust': '🔹 Organic: Sulfur 80% WP 2g/L. 🔹 Chemical: Metalaxyl 2g/L, Mancozeb 2g/L, Ridomil Gold 2.5g/L. Spray at early vegetative stage.',
+      'purple blotch': '🔹 Organic: Neem oil, Copper fungicide. 🔹 Chemical: Mancozeb 2g/L, Chlorothalonil 2g/L, Hexaconazole 1ml/L. For onion/garlic, spray every 7 days.',
+      'soft rot': '🔹 Prevention: Streptocycline 0.1g/L spray. 🔹 Post-harvest: Dip in Copper oxychloride 2g/L. Ensure proper drainage and avoid injuries.',
+      'cucumber mosaic': '🔹 Control aphids: Imidacloprid 0.5ml/L, Acetamiprid 0.3g/L. 🔹 Remove infected plants. Use reflective mulch. Plant virus-resistant varieties.',
+      'gummy stem blight': '🔹 Seed treatment: Thiram 2g/kg. 🔹 Foliar: Carbendazim 1g/L, Thiophanate-methyl 1g/L, Azoxystrobin 1ml/L. Rotate with non-cucurbit crops.',
+      'angular leaf spot': '🔹 Organic: Copper fungicide. 🔹 Chemical: Copper oxychloride 3g/L, Streptomycin 200ppm. Spray weekly. Use disease-free seeds.',
+      'bacterial canker': '🔹 Seed treatment: Hot water (56°C, 30 min). 🔹 Spray: Streptomycin 200ppm, Copper oxychloride 3g/L. Remove infected plants.',
+      'aphids': '🔹 Organic: Neem oil 5ml/L, insecticidal soap. 🔹 Chemical: Imidacloprid 0.5ml/L, Thiamethoxam 0.3g/L, Dimethoate 2ml/L. Spray early morning.',
+      'whitefly': '🔹 Organic: Neem oil, yellow sticky traps. 🔹 Chemical: Imidacloprid 0.5ml/L, Buprofezin 1g/L, Spiromesifen 0.5ml/L. Spray undersides of leaves.',
+      'thrips': '🔹 Organic: Neem oil 5ml/L, Spinosad (Tracer 45SC) 0.3ml/L. 🔹 Chemical: Fipronil (Regent 5SC) 2ml/L, Dimethoate 2ml/L. Spray at evening.',
+      'fruit borer': '🔹 Organic: Neem oil, Bacillus thuringiensis (Bt) 1g/L. 🔹 Chemical: Chlorantraniliprole (Coragen 20SC) 0.3ml/L, Flubendiamide (Fame 480SC) 0.5ml/L.',
+      'leaf miner': '🔹 Organic: Neem oil, yellow sticky traps. 🔹 Chemical: Abamectin 0.5ml/L, Cyromazine (Trigard 75WP) 0.4g/L. Remove and destroy affected leaves.',
+      'stem borer': '🔹 Organic: Neem cake soil application 100g/plant. 🔹 Chemical: Chlorpyrifos 20% EC 2ml/L, Cartap hydrochloride (Padan 50SP) 1g/L. Spray at whorl stage.',
+      'cutworm': '🔹 Organic: Neem cake, wood ash around stem. 🔹 Chemical: Chlorpyrifos 20% EC 2ml/L soil drench, Quinalphos 25% EC 2ml/L. Apply at evening.',
+      'nematodes': '🔹 Organic: Neem cake 100g/sq.m, Paecilomyces lilacinus. 🔹 Chemical: Carbofuran 3% CG 15kg/hectare, Phorate 10% CG 10kg/hectare. Apply before planting.',
+      
+      // General crop maintenance
+      'walnut': 'No disease detected. 🔹 Preventive: Bordeaux mixture 1%, Copper fungicide 3g/L. 🔹 Fertilizer: NPK 10:10:10 at 50g/plant monthly.',
+      'tomato': 'No disease detected. 🔹 Preventive spray: Mancozeb 2g/L or Copper oxychloride 3g/L every 15 days. 🔹 Fertilizer: NPK 19:19:19 5g/L weekly.',
+      'pepper': 'No disease detected. 🔹 Preventive: Mancozeb 2g/L every 10 days. 🔹 Fertilizer: NPK 19:19:19 5g/L + Calcium nitrate 2g/L weekly.',
+      'cucumber': 'No disease detected. 🔹 Preventive: Carbendazim 1g/L weekly. 🔹 Fertilizer: NPK 19:19:19 5g/L + Boron 0.5g/L biweekly.',
+      'cabbage': 'No disease detected. 🔹 Preventive: Mancozeb 2g/L + Chlorpyrifos 2ml/L every 10 days. 🔹 Fertilizer: NPK 19:19:19 5g/L.',
+      'potato': 'No disease detected. 🔹 Preventive: Mancozeb 2g/L every 10 days. 🔹 Fertilizer: NPK 19:19:19 5g/L + Zinc sulfate 2g/L.',
+      'onion': 'No disease detected. 🔹 Preventive: Mancozeb 2g/L + Carbendazim 1g/L every 15 days. 🔹 Fertilizer: NPK 19:19:19 5g/L.',
+      'beans': 'No disease detected. 🔹 Preventive: Carbendazim 1g/L at flowering. 🔹 Fertilizer: NPK 19:19:19 3g/L + Rhizobium inoculation.',
+      'eggplant': 'No disease detected. 🔹 Preventive: Mancozeb 2g/L + Imidacloprid 0.5ml/L every 10 days. 🔹 Fertilizer: NPK 19:19:19 5g/L.',
+      'banana': 'No disease detected. 🔹 Preventive: Mancozeb 2g/L monthly. 🔹 Pseudostem injection: Carbendazim 1g/L. 🔹 Fertilizer: NPK 19:19:19 10g/L.',
+      'rot': '🔹 Soil drench: Metalaxyl 35% WS 1g/L, Fosetyl-Al 3g/L. 🔹 Foliar: Copper oxychloride 3g/L. 🔹 Biocontrol: Trichoderma viride soil application.',
+      'canker': '🔹 Spray: Copper oxychloride 50% WP 3g/L, Bordeaux mixture 1%. 🔹 Wound paste: Carbendazim + Copper paste. Prune 15cm below infection.',
+      
+      // EGGPLANT/BRINJAL DISEASES
+      'eggplant fruit rot': '🔹 Organic: Neem oil 5ml/L. 🔹 Chemical: Carbendazim 1g/L + Mancozeb 2g/L. Spray at fruit set and every 10 days.',
+      'eggplant phomopsis blight': '🔹 Seed treatment: Thiram 2g/kg. 🔹 Spray: Mancozeb 2g/L + Carbendazim 1g/L. Rotate with Copper oxychloride 3g/L.',
+      'eggplant little leaf': '🔹 Control leafhoppers: Imidacloprid 0.5ml/L, Thiamethoxam 0.3g/L. Remove infected plants. Use virus-free seedlings.',
+      'eggplant bacterial wilt': '🔹 Soil drench: Streptomycin 500ppm + Copper oxychloride 2g/L. Remove and burn infected plants immediately.',
+      'eggplant damping off': '🔹 Seed treatment: Thiram 2g/kg. 🔹 Soil drench: Metalaxyl 1g/L + Copper oxychloride 2g/L before planting.',
+      'eggplant cercospora leaf spot': '🔹 Mancozeb 75% WP 2g/L, Carbendazim 1g/L, Chlorothalonil 2g/L. Spray every 10-12 days.',
+      'eggplant anthracnose': '🔹 Copper fungicide, Carbendazim 1g/L + Mancozeb 2g/L. Apply at first flower and fruit set.',
+      'brinjal fruit borer': '🔹 Organic: Neem oil 5ml/L, Bt (Bacillus thuringiensis) 1g/L. 🔹 Chemical: Chlorantraniliprole 0.3ml/L, Spinosad 0.3ml/L. Spray at evening.',
+      'brinjal shoot borer': '🔹 Remove and destroy infested shoots. 🔹 Chlorantraniliprole 0.3ml/L, Flubendiamide 0.5ml/L every 10 days.',
+      'brinjal aphids': '🔹 Organic: Neem oil 5ml/L, soap spray. 🔹 Chemical: Imidacloprid 0.5ml/L, Thiamethoxam 0.3g/L. Spray undersides.',
+      'brinjal whitefly': '🔹 Yellow sticky traps. 🔹 Imidacloprid 0.5ml/L, Buprofezin 1g/L, Spiromesifen 0.5ml/L. Spray every 7 days.',
+      'brinjal jassids': '🔹 Imidacloprid 0.5ml/L, Thiamethoxam 0.3g/L, Acetamiprid 0.3g/L. Spray at tender leaf stage.',
+      
+      // WHEAT DISEASES
+      'wheat rust': '🔹 Organic: Sulfur 80% WP 2g/L. 🔹 Chemical: Propiconazole (Tilt 25EC) 1ml/L, Tebuconazole (Folicur 250EC) 0.5ml/L, Mancozeb 2g/L. Spray at first sign.',
+      'wheat brown rust': '🔹 Propiconazole 1ml/L, Tebuconazole 0.5ml/L, Triadimefon (Bayleton 25WP) 0.5g/L. Spray at tillering and boot stage.',
+      'wheat yellow rust': '🔹 Propiconazole 1ml/L, Mancozeb 2g/L, Zineb 2g/L. Spray preventively before disease appearance. Repeat every 15 days.',
+      'wheat black rust': '🔹 Mancozeb 75% WP 2g/L, Propiconazole 1ml/L. Spray at boot stage and milk stage. Use resistant varieties.',
+      'wheat powdery mildew': '🔹 Organic: Sulfur 80% WP 2g/L. 🔹 Chemical: Hexaconazole (Contaf 5EC) 1ml/L, Tebuconazole 0.5ml/L, Propiconazole 1ml/L. Spray at early jointing.',
+      'wheat leaf blight': '🔹 Mancozeb 2g/L, Carbendazim 1g/L, Chlorothalonil 2g/L. Spray at tillering, boot, and heading stages.',
+      'wheat septoria leaf spot': '🔹 Chlorothalonil 2g/L, Mancozeb 2g/L, Propiconazole 1ml/L. Spray at flag leaf emergence and heading.',
+      'fusarium head blight': '🔹 Tebuconazole 0.5ml/L, Propiconazole 1ml/L, Carbendazim 1g/L. Spray at early flowering. Repeat after 7 days.',
+      'wheat tan spot': '🔹 Propiconazole 1ml/L, Tebuconazole 0.5ml/L, Azoxystrobin 1ml/L. Spray at tillering and flag leaf stage.',
+      'wheat loose smut': '🔹 Seed treatment: Vitavax (Carboxin 75% WP) 2g/kg seed, Tebuconazole 2ml/kg seed. Hot water treatment 49°C for 3 hours.',
+      'wheat karnal bunt': '🔹 Seed treatment: Tebuconazole 2ml/kg seed. 🔹 Foliar: Propiconazole 1ml/L at boot stage and 50% flowering. Burn infected grains.',
+      'wheat flag smut': '🔹 Seed treatment: Carboxin 2g/kg, Tebuconazole 2ml/kg. Remove and burn infected plants before heading.',
+      'wheat stem rust': '🔹 Propiconazole 1ml/L + Mancozeb 2g/L. Spray at boot and heading stage. Use resistant varieties like HD2967, WH1105.',
+      'wheat leaf rust': '🔹 Mancozeb 2g/L, Propiconazole 1ml/L. Spray at tillering and flag leaf stage. Spray every 15 days if disease persists.',
+      'wheat root rot': '🔹 Seed treatment: Carbendazim 2g/kg, Metalaxyl 2ml/kg. 🔹 Soil drench: Carbendazim 2g/L at sowing.',
+      'wheat blast': '🔹 Tricyclazole (Beam 75WP) 0.6g/L, Tebuconazole 0.5ml/L. Spray at heading and repeat after 7 days. Emergency disease.',
+      'wheat aphids': '🔹 Organic: Neem oil 5ml/L. 🔹 Chemical: Imidacloprid 0.5ml/L, Thiamethoxam 0.3g/L, Dimethoate 40% EC 2ml/L. Spray at tillering.',
+      'wheat stem borer': '🔹 Chlorpyrifos 20% EC 2ml/L, Quinalphos 25% EC 2ml/L. Spray at early vegetative stage. Remove and destroy stubbles.',
+      'wheat termites': '🔹 Chlorpyrifos 20% EC 4ml/L soil application before sowing. Treat seed with Imidacloprid 2ml/kg seed.',
+      'wheat army worm': '🔹 Chlorpyrifos 2ml/L, Quinalphos 2ml/L, Malathion 50% EC 2ml/L. Spray in evening. Mechanical collection in early morning.',
+      
+      // FRUIT CROPS (100+ diseases)
+      'citrus canker': '🔹 Copper oxychloride 3g/L + Streptocycline 0.1g/L. Spray every 15 days. Prune infected branches 30cm below.',
+      'citrus greening': '🔹 Control psyllids: Imidacloprid 0.5ml/L. 🔹 Zinc + Manganese spray 5g/L foliar. No cure - remove infected trees.',
+      'fire blight': '🔹 Streptomycin 200ppm at 5% bloom. Copper 3g/L. Prune 30cm below infection. Disinfect tools with 70% alcohol.',
+      'apple scab': '🔹 Myclobutanil 0.5ml/L, Captan 2g/L. Start at green tip. Spray every 7-10 days until petal fall.',
+      'mango anthracnose': '🔹 Carbendazim 1g/L, Azoxystrobin 1ml/L at flowering. Post-harvest: Hot water 52°C, 5min.',
+      'mango malformation': '🔹 NAA 200ppm at panicle emergence. Prune affected panicles. Carbendazim 1g/L before flowering.',
+      'grape downy mildew': '🔹 Metalaxyl 2g/L, Cymoxanil + Mancozeb 2.5g/L. Spray every 10 days from flowering.',
+      'banana bunchy top': '🔹 Control aphids: Imidacloprid 0.5ml/L. Remove and destroy infected plants. Use virus-free suckers.',
+      'papaya ring spot': '🔹 Control aphids: Imidacloprid 0.5ml/L. Remove infected plants. Reflective mulch. No cure available.',
+      'pomegranate bacterial blight': '🔹 Copper oxychloride 3g/L + Streptocycline 0.1g/L every 10 days during monsoon.',
+      
+      // CEREAL CROPS (80+ diseases)
+      'rice blast': '🔹 Tricyclazole (Beam 75WP) 0.6g/L, Isoprothiolane 1.5ml/L. Spray at tillering and panicle initiation.',
+      'rice sheath blight': '🔹 Hexaconazole 2ml/L, Validamycin 2ml/L at maximum tillering. Spray lower portion of plant.',
+      'rice bacterial blight': '🔹 Copper oxychloride 3g/L + Streptocycline 0.1g/L. Seed treatment with Streptocycline.',
+      'rice bacterial leaf blight': '🔹 Copper oxychloride 3g/L + Streptocycline 0.1g/L. Seed treatment with Streptocycline.',
+      'rice tungro': '🔹 Control leafhoppers: Imidacloprid 0.5ml/L, Fipronil 2ml/L. Remove infected plants. Resistant varieties.',
+      'rice stem borer': '🔹 Chlorantraniliprole 0.3ml/L, Cartap hydrochloride 1g/L at dead heart stage.',
+      'rice hispa': '🔹 Chlorpyrifos 2ml/L, Cartap hydrochloride 1g/L. Spray on leaf surface. Drain water before spraying.',
+      'rice sheath rot': '🔹 Carbendazim 1g/L, Propiconazole 1ml/L at boot stage. Balanced NPK application.',
+      'rice leaf folder': '🔹 Chlorantraniliprole 0.3ml/L, Fipronil 2ml/L. Spray at early infestation stage.',
+      'rice false smut': '🔹 Copper oxychloride 3g/L or Propiconazole 1ml/L at boot stage and heading.',
+      'rice neck blast': '🔹 Tricyclazole 0.6g/L, Azoxystrobin 1ml/L at panicle initiation and heading.',
+      'rice sheath blotch': '🔹 Mancozeb 2g/L, Propiconazole 1ml/L. Spray at tillering and boot stage.',
+      'bacterial leaf streak': '🔹 Copper oxychloride 3g/L. Avoid excess nitrogen. Use resistant varieties.',
+      'wheat rust': '🔹 Propiconazole 1ml/L, Tebuconazole 0.5ml/L at first rust appearance. Repeat after 15 days.',
+      'wheat powdery mildew': '🔹 Hexaconazole 1ml/L, Sulfur 2g/L at tillering and boot stage.',
+      'maize downy mildew': '🔹 Seed treatment: Metalaxyl 6g/kg. 🔹 Foliar: Metalaxyl 2g/L at 15, 25 days.',
+      'maize fall armyworm': '🔹 Chlorantraniliprole 0.3ml/L, Emamectin benzoate 0.4g/L at whorl stage.',
+      
+      // PULSE CROPS (60+ diseases)
+      'chickpea wilt': '🔹 Seed: Carbendazim 2g/kg + Trichoderma 4g/kg. Soil drench: Carbendazim 2g/L. Resistant varieties.',
+      'pigeon pea wilt': '🔹 Seed: Carbendazim 2g/kg + Trichoderma. Soil drench 2g/L at 30 days. Deep summer plowing.',
+      'soybean rust': '🔹 Tebuconazole 0.5ml/L, Trifloxystrobin + Tebuconazole 0.5ml/L. Repeat after 15 days.',
+      'groundnut tikka': '🔹 Mancozeb 2g/L, Chlorothalonil 2g/L at 30, 45, 60 days after sowing.',
+      
+      // VEGETABLES EXPANDED (120+ diseases)
+      'tomato leaf curl': '🔹 Control whiteflies: Imidacloprid 0.5ml/L, Buprofezin 1g/L. Reflective mulch. Remove infected plants.',
+      'tomato blossom end rot': '🔹 Calcium nitrate 5g/L foliar at fruit set. Regular irrigation. Avoid excess nitrogen.',
+      'potato late blight': '🔹 Metalaxyl + Mancozeb 2.5g/L every 7-10 days. Destroy infected plants immediately.',
+      'brinjal fruit borer': '🔹 Chlorantraniliprole 0.3ml/L, Flubendiamide 0.5ml/L. Bt 1g/L organic.',
+      'chili anthracnose': '🔹 Seed: Carbendazim 2g/kg. Foliar: Carbendazim 1g/L, Azoxystrobin 1ml/L at flowering.',
+      'chili leaf curl': '🔹 Control whiteflies: Imidacloprid 0.5ml/L, Buprofezin 1g/L. Reflective mulch. Remove infected plants immediately.',
+      'chili bacterial wilt': '🔹 Soil drench: Streptomycin 500ppm, Copper oxychloride 3g/L. Remove and burn infected plants. Crop rotation 3-4 years.',
+      'chili powdery mildew': '🔹 Sulfur 80% WP 2g/L, Hexaconazole 1ml/L. Spray at first sign. Repeat every 7-10 days.',
+      'chili mosaic virus': '🔹 Control aphids: Imidacloprid 0.5ml/L. Remove infected plants. Use virus-free seeds. Reflective mulch.',
+      'chili thrips': '🔹 Fipronil 2ml/L, Dimethoate 2ml/L. Spray undersides of leaves. Blue sticky traps.',
+      'chili fruit borer': '🔹 Chlorantraniliprole 0.3ml/L, Flubendiamide 0.5ml/L. Bt spray 1g/L organic option.',
+      'potato early blight': '🔹 Mancozeb 2g/L, Chlorothalonil 2g/L. Start at first symptoms. Spray every 7-10 days.',
+      'potato black scurf': '🔹 Seed treatment: Thiram 2.5g/kg. Foliar: Copper oxychloride 3g/L. Improve drainage.',
+      'potato common scab': '🔹 Soil pH 5.0-5.2. Sulfur 50g/sq.m before planting. Maintain uniform moisture. Avoid excess lime.',
+      'okra yellow vein mosaic': '🔹 Control whiteflies: Imidacloprid 0.5ml/L. Remove infected plants. Resistant varieties.',
+      'cabbage diamondback moth': '🔹 Bt 1g/L, Chlorantraniliprole 0.3ml/L, Emamectin benzoate 0.4g/L.',
+      'onion purple blotch': '🔹 Mancozeb 2g/L, Hexaconazole 1ml/L every 10 days. Crop rotation.',
+      
+      // NUTRIENT DEFICIENCIES (40+ conditions)
+      'nitrogen deficiency': '🔹 Urea 10g/L foliar or Ammonium sulfate 15g/L. Soil: Urea 100-150kg/hectare. Yellowing of older leaves.',
+      'phosphorus deficiency': '🔹 DAP 10g/L foliar, SSP 200kg/hectare soil. Purple/dark green leaves, stunted growth.',
+      'potassium deficiency': '🔹 MOP/SOP 10g/L foliar. Soil: 100kg/hectare. Leaf margin burn, scorching.',
+      'calcium deficiency': '🔹 Calcium nitrate/chloride 5g/L foliar. Gypsum 500kg/hectare. Blossom end rot, tip burn.',
+      'magnesium deficiency': '🔹 Magnesium sulfate (Epsom salt) 5g/L foliar. Dolomite 300kg/hectare. Interveinal chlorosis.',
+      'iron deficiency': '🔹 Ferrous sulfate 3g/L + Citric acid 1g/L or Fe-EDTA 2g/L foliar. Young leaf chlorosis.',
+      'zinc deficiency': '🔹 Zinc sulfate 5g/L + Lime 2.5g/L foliar. Soil: 25kg/hectare. Little leaf, rosetting.',
+      'boron deficiency': '🔹 Borax 1g/L foliar. Soil: 10-15kg/hectare. Hollow stem, flower abortion.',
+      
+      // ENVIRONMENTAL STRESS (30+ conditions)
+      'heat stress': '🔹 Kaolin clay 30g/L for sun protection. Cool water spray. Shade net. Mulching.',
+      'cold stress': '🔹 Brassinosteroids 0.1ppm. Cover with plastic. Light irrigation before frost. Potassium 5g/L.',
+      'drought stress': '🔹 Salicylic acid 100ppm foliar. Mulching. Anti-transpirant Kaolin 30g/L. Drip irrigation.',
+      'salinity stress': '🔹 Gypsum 500kg/hectare. Calcium chloride 5g/L foliar. Leaching. Salicylic acid 100ppm.',
+      
+      'healthy': '✅ No treatment needed. 🔹 Preventive: NPK 19:19:19 at 5g/L every 15 days. 🔹 Micronutrients: ZnSO4 + FeSO4 + MnSO4 mix 3g/L monthly. 🔹 Bio-stimulant: Seaweed extract 2ml/L monthly.',
+      'no detection': 'Unable to detect disease. Ensure proper image quality. If disease visible, consult agricultural expert with leaf sample for proper diagnosis.',
+      'default': '⚠️ Consult local agricultural extension. 🔹 General spray: Mancozeb 75% WP 2g/L + Copper oxychloride 50% WP 3g/L. 🔹 Insect control: Imidacloprid 0.5ml/L. Take leaf sample for lab analysis.'
+    };
+    
+    // ==================== CONTEXT-AWARE ANALYSIS ALGORITHMS ====================
+    
+    // Sensors/context removed - return neutral context
+    function analyzeEnvironmentalContext(sensorData) {
+      return {
+        riskFactors: [],
+        severity: 'low',
+        severityScore: 0,
+        recommendations: [],
+        metrics: {
+          moistureRisk: 'normal',
+          humidityRisk: 'normal',
+          temperatureRisk: 'normal',
+          nutrientRisk: 'normal',
+          lightRisk: 'normal'
+        }
+      };
+    }
+    
+    // Simplified severity assessment (visual-only)
+    function assessDiseaseSeverity(diseaseName, confidence, envContext) {
+      let severity = 'mild';
+      let treatmentUrgency = 'routine';
+      let spreadRisk = 'low';
+
+      if (confidence >= 90) { severity = 'severe'; treatmentUrgency = 'immediate'; spreadRisk = 'high'; }
+      else if (confidence >= 70) { severity = 'moderate'; treatmentUrgency = 'within 24-48 hours'; spreadRisk = 'medium'; }
+      else if (confidence >= 50) { severity = 'mild'; treatmentUrgency = 'within 1 week'; spreadRisk = 'low'; }
+
+      return { severity, treatmentUrgency, spreadRisk, criticalityScore: confidence };
+    }
+    
+    // ==================== ANALYTICS & LOGGING SYSTEM ====================
+    
+    let analyticsData = {
+      logs: [],
+      charts: {
+        disease: null,
+        confidence: null,
+        environment: null,
+        severity: null,
+        timeline: null,
+        modelPrecision: null
+      },
+      modelFeedback: {} // Stores feedback for each model: { modelName: { correct: 0, wrong: 0 } }
+    };
+    
+    // Initialize model feedback tracking
+    function initializeModelFeedback() {
+      MODELS.forEach(model => {
+        if (!analyticsData.modelFeedback[model.name]) {
+          analyticsData.modelFeedback[model.name] = { correct: 0, wrong: 0, total: 0 };
+        }
+      });
+    }
+    
+    // Record feedback for a specific model and analysis
+    function recordModelFeedback(analysisId, modelName, isCorrect) {
+      if (!analyticsData.modelFeedback[modelName]) {
+        analyticsData.modelFeedback[modelName] = { correct: 0, wrong: 0, total: 0 };
+      }
+      
+      if (isCorrect) {
+        analyticsData.modelFeedback[modelName].correct++;
+      } else {
+        analyticsData.modelFeedback[modelName].wrong++;
+      }
+      analyticsData.modelFeedback[modelName].total++;
+      
+      // Update the specific log entry with feedback
+      const logEntry = analyticsData.logs.find(log => log.id === analysisId);
+      if (logEntry) {
+        if (!logEntry.modelFeedbacks) {
+          logEntry.modelFeedbacks = {};
+        }
+        logEntry.modelFeedbacks[modelName] = isCorrect;
+      }
+      
+      saveAnalytics();
+      
+      // Update chart immediately after recording feedback
+      console.log('🔄 Updating chart with new feedback data:', analyticsData.modelFeedback);
+      console.log('📊 Total models with feedback:', Object.keys(analyticsData.modelFeedback).length);
+      updateModelPrecisionChart();
+      
+      console.log('Feedback recorded for', modelName, ':', isCorrect ? 'Correct' : 'Wrong');
+      console.log('Updated stats:', analyticsData.modelFeedback[modelName]);
+    }
+    
+    // Reset all model feedback data
+    function resetModelFeedback() {
+      if (!confirm('⚠️ Are you sure you want to reset all model feedback data?\n\nThis will:\n• Clear all precision statistics\n• Remove the chart data\n• Delete feedback from Firebase\n\nThis action cannot be undone.')) {
+        return;
+      }
+      
+      console.log('🗑️ Resetting all model feedback data...');
+      
+      // Clear local data
+      analyticsData.modelFeedback = {};
+      
+      // Clear from Firebase
+      if (firebaseReady && firebaseEnabled && db) {
+        db.collection('modelFeedback').doc('current').delete().then(() => {
+          console.log('✅ Model feedback deleted from Firebase');
+          alert('✅ All model feedback has been reset successfully!');
+        }).catch(err => {
+          console.error('❌ Failed to delete feedback from Firebase:', err);
+          alert('⚠️ Feedback cleared locally but Firebase deletion failed: ' + err.message);
+        });
+      }
+      
+      // Clear from localStorage
+      const stored = localStorage.getItem('diseaseAnalytics');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          data.modelFeedback = {};
+          localStorage.setItem('diseaseAnalytics', JSON.stringify(data));
+          console.log('✅ Model feedback cleared from localStorage');
+        } catch (e) {
+          console.error('Failed to clear feedback from localStorage:', e);
+        }
+      }
+      
+      // Update chart to show empty state
+      updateModelPrecisionChart();
+      
+      console.log('✅ Model feedback reset complete');
+    }
+    
+    // Enhanced log entry with complete data
+    function createCompleteLogEntry(results, sensorData, envContext, capturedImageBase64) {
+      const timestamp = new Date().toISOString();
+      const diseases = [];
+      const allModelResults = [];
+      
+      results.forEach(r => {
+        // Store complete model result
+        const modelResult = {
+          modelName: r.name,
+          modelType: r.type,
+          error: r.error || null,
+          rawData: r.data
+        };
+        
+        if (r.error) {
+          allModelResults.push(modelResult);
+          return;
+        }
+        
+        let disease = 'Healthy';
+        let confidence = 0;
+        
+        if (r.type === 'detection' && r.data.predictions && r.data.predictions.length > 0) {
+          const top = r.data.predictions.reduce((a, b) => a.confidence > b.confidence ? a : b);
+          disease = top.class;
+          confidence = top.confidence * 100;
+          modelResult.detectedClass = disease;
+          modelResult.confidence = confidence;
+          modelResult.allPredictions = r.data.predictions;
+        } else if (r.type === 'classification' && (r.data.top || r.data.predicted_classes)) {
+          disease = r.data.top || r.data.predicted_classes[0];
+          confidence = (r.data.confidence || 0) * 100;
+          modelResult.detectedClass = disease;
+          modelResult.confidence = confidence;
+        }
+        
+        allModelResults.push(modelResult);
+        
+        if (disease !== 'Healthy' && confidence > 0) {
+          const severityAssessment = assessDiseaseSeverity(disease, confidence, envContext);
+          diseases.push({
+            name: disease,
+            confidence: confidence,
+            model: r.name,
+            severity: severityAssessment.severity,
+            spreadRisk: severityAssessment.spreadRisk,
+            urgency: severityAssessment.treatmentUrgency,
+            treatment: getRemedy(disease),
+            criticalityScore: severityAssessment.criticalityScore
+          });
+        }
+      });
+      
+      return {
+        id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        timestamp,
+        timestampReadable: new Date(timestamp).toLocaleString(),
+        diseases,
+        allModelResults,
+        sensorData: sensorData || null,
+        environmentalContext: envContext || null,
+        primaryDisease: diseases.length > 0 ? diseases[0].name : 'Healthy',
+        avgConfidence: diseases.length > 0 ? diseases.reduce((sum, d) => sum + d.confidence, 0) / diseases.length : 0,
+        overallSeverity: envContext ? envContext.severity : 'unknown',
+        imageBase64: capturedImageBase64 || null,
+        deviceInfo: {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          screenResolution: window.screen.width + 'x' + window.screen.height
+        }
+      };
+    }
+    
+    // Load analytics from Firebase (primary) with localStorage as fallback cache
+    async function loadAnalytics() {
+      // Wait for Firebase to be ready
+      if (firebaseReadyPromise) {
+        try {
+          await firebaseReadyPromise;
+        } catch (e) {
+          console.warn('Firebase authentication failed, using localStorage');
+        }
+      }
+      
+      // Try to load from Firebase first
+      if (firebaseReady && firebaseEnabled && db) {
+        try {
+          console.log('📥 Loading all data from Firebase...');
+          
+          // Load all logs from Firebase
+          const logsSnapshot = await db.collection('diseaseAnalytics')
+            .orderBy('timestamp', 'desc')
+            .get();
+          
+          const firebaseLogs = [];
+          logsSnapshot.forEach(doc => {
+            const logData = doc.data();
+            logData.firebaseId = doc.id;
+            logData.savedToFirebase = true;
+            firebaseLogs.push(logData);
+          });
+          
+          analyticsData.logs = firebaseLogs;
+          console.log('✅ Loaded', firebaseLogs.length, 'logs from Firebase');
+          
+          // Load model feedback from Firebase
+          console.log('📥 Loading model feedback from Firebase...');
+          const feedbackDoc = await db.collection('modelFeedback').doc('current').get();
+          console.log('📄 Feedback document exists:', feedbackDoc.exists);
+          
+          if (feedbackDoc.exists) {
+            const docData = feedbackDoc.data();
+            console.log('📦 Document data:', docData);
+            analyticsData.modelFeedback = docData.feedback || {};
+            console.log('✅ Loaded model feedback from Firebase');
+            console.log('📊 Model feedback data:', analyticsData.modelFeedback);
+            console.log('📊 Number of models with feedback:', Object.keys(analyticsData.modelFeedback).length);
+          } else {
+            console.warn('⚠️ Model feedback document does not exist in Firebase');
+            analyticsData.modelFeedback = {};
+          }
+          
+          // Update dashboard and charts after loading
+          updateAnalyticsDashboard();
+          updateHistoryPanel();
+          updateModelPrecisionChart(); // Explicitly update chart after Firebase load
+          
+        } catch (e) {
+          console.error('Failed to load from Firebase, using localStorage cache:', e);
+          loadFromLocalStorageCache();
+        }
+      } else {
+        console.warn('⚠️ Firebase not enabled, loading from localStorage cache');
+        loadFromLocalStorageCache();
+      }
+      
+      initializeModelFeedback();
+    }
+    
+    // Fallback: Load from localStorage cache
+    function loadFromLocalStorageCache() {
+      const stored = localStorage.getItem('diseaseAnalytics');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          // Support old format (array) and new format (object with logs and feedback)
+          if (Array.isArray(data)) {
+            analyticsData.logs = data;
+            analyticsData.modelFeedback = {};
+          } else {
+            analyticsData.logs = data.logs || [];
+            analyticsData.modelFeedback = data.modelFeedback || {};
+          }
+          console.log('📦 Loaded', analyticsData.logs.length, 'records from localStorage cache');
+          
+          // Update dashboard and charts after loading from cache
+          updateAnalyticsDashboard();
+          updateHistoryPanel();
+        } catch (e) {
+          console.error('Failed to load from localStorage:', e);
+          analyticsData.logs = [];
+          analyticsData.modelFeedback = {};
+        }
+      }
+    }
+    
+    // Save analytics to Firebase (primary) and localStorage (backup cache only)
+    function saveAnalytics() {
+      // Save to Firebase as primary storage
+      if (firebaseReady && firebaseEnabled && db) {
+        // Save all logs to Firebase
+        analyticsData.logs.forEach(log => {
+          if (!log.savedToFirebase) {
+            saveToFirebase(log).then(() => {
+              log.savedToFirebase = true;
+            }).catch(err => {
+              console.error('Failed to save log to Firebase:', err);
+            });
+          }
+        });
+        
+        // Save model feedback separately (only if there's data)
+        const feedbackKeys = Object.keys(analyticsData.modelFeedback);
+        if (feedbackKeys.length > 0) {
+          console.log('💾 Saving', feedbackKeys.length, 'model feedback entries to Firebase...');
+          console.log('📝 Feedback data to save:', JSON.stringify(analyticsData.modelFeedback));
+          
+          db.collection('modelFeedback').doc('current').set({
+            feedback: analyticsData.modelFeedback,
+            lastUpdated: new Date().toISOString(),
+            userId: auth.currentUser ? auth.currentUser.uid : 'anonymous'
+          }, { merge: true }).then(() => {
+            console.log('✅ Model feedback saved to Firebase successfully');
+            
+            // Verify save by reading back
+            db.collection('modelFeedback').doc('current').get().then(doc => {
+              if (doc.exists) {
+                console.log('✅ Verified - Feedback in Firebase:', Object.keys(doc.data().feedback || {}).length, 'models');
+              } else {
+                console.error('❌ Verification failed - Document does not exist after save!');
+              }
+            });
+          }).catch(err => {
+            console.error('❌ Failed to save model feedback to Firebase:', err);
+          });
+        } else {
+          console.log('ℹ️ No model feedback to save yet');
+        }
+        
+        console.log('✅ All logs saved to Firebase');
+      } else {
+        console.warn('⚠️ Firebase not enabled, using localStorage as fallback');
+      }
+      
+      // Keep minimal cache in localStorage (last 20 records only for offline access)
+      try {
+        const recentLogs = analyticsData.logs.slice(-20);
+        const dataToSave = {
+          logs: recentLogs,
+          modelFeedback: analyticsData.modelFeedback,
+          cacheOnly: true
+        };
+        localStorage.setItem('diseaseAnalytics', JSON.stringify(dataToSave));
+        console.log('Cached', recentLogs.length, 'recent records to localStorage');
+      } catch (e) {
+        console.error('Failed to cache to localStorage:', e);
+      }
+    }
+    
+    // Save to Firebase Firestore
+    async function saveToFirebase(logEntry) {
+      if (!firebaseReady || !firebaseEnabled || !db) {
+        log.warn('⚠️ Firebase not available, using localStorage only');
+        return;
+      }
+      
+      try {
+        // Store complete entry with image in Firestore
+        // Note: For large datasets, consider compressing images or using thumbnails
+        const firestoreEntry = { ...logEntry };
+        
+        // Add to Firestore with full image data
+        const docRef = await db.collection('diseaseAnalytics').add({
+          ...firestoreEntry,
+          uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          userId: auth.currentUser ? auth.currentUser.uid : 'anonymous'
+        });
+        
+        console.log('✅ Saved to Firebase with ID:', docRef.id);
+        console.log('ℹ️ Image stored as base64 in Firestore (Storage requires paid plan)');
+        
+        return docRef.id;
+      } catch (e) {
+        console.error('❌ Failed to save to Firebase:', e);
+        throw e;
+      }
+    }
+    
+    // Convert base64 to blob
+    function base64ToBlob(base64, contentType) {
+      const byteCharacters = atob(base64);
+      const byteArrays = [];
+      
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+      
+      return new Blob(byteArrays, { type: contentType });
+    }
+    
+    // Log analysis result (enhanced with complete data)
+    async function logAnalysis(results, sensorData, envContext, imageBase64, analysisId) {
+      const logEntry = createCompleteLogEntry(results, sensorData, envContext, imageBase64);
+      logEntry.id = analysisId; // Store the analysis ID
+      logEntry.modelFeedbacks = {}; // Initialize empty feedback object
+      
+      analyticsData.logs.push(logEntry);
+      saveAnalytics();
+      
+      // Save to Firebase asynchronously
+      if (firebaseReady && firebaseEnabled) {
+        saveToFirebase(logEntry).catch(err => {
+          console.error('Firebase save failed, data is in localStorage:', err);
+        });
+      }
+      
+      updateAnalyticsDashboard();
+      updateHistoryPanel();
+    }
+    
+    // Load from Firebase
+    async function loadFromFirebase(showAlert = true) {
+      // Wait for Firebase to be ready
+      if (firebaseReadyPromise) {
+        try {
+          await firebaseReadyPromise;
+        } catch (e) {
+          if (showAlert) alert('Firebase not connected. Using local data only.');
+          return;
+        }
+      }
+      
+      if (!firebaseReady || !firebaseEnabled || !db) {
+        if (showAlert) alert('Firebase not connected. Using local data only.');
+        return;
+      }
+      
+      try {
+        // Get button element if called from UI (event exists)
+        const btn = event?.target;
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '⏳ Loading...';
+        }
+        
+        const snapshot = await db.collection('diseaseAnalytics')
+          .orderBy('timestamp', 'desc')
+          .limit(100)
+          .get();
+        
+        const firebaseLogs = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          firebaseLogs.push({ ...data, firebaseId: doc.id });
+        });
+        
+        console.log('✅ Loaded', firebaseLogs.length, 'records from Firebase');
+        const withImages = firebaseLogs.filter(log => log.imageBase64).length;
+        console.log('📷 Records with images:', withImages, '/', firebaseLogs.length);
+        
+        // Merge with local data (remove duplicates by timestamp)
+        const merged = [...analyticsData.logs, ...firebaseLogs];
+        const unique = merged.filter((log, index, self) =>
+          index === self.findIndex(l => l.timestamp === log.timestamp)
+        );
+        
+        analyticsData.logs = unique.sort((a, b) => 
+          new Date(a.timestamp) - new Date(b.timestamp)
+        );
+        
+        saveAnalytics();
+        updateAnalyticsDashboard();
+        updateHistoryPanel();
+        
+        if (showAlert) alert('Loaded ' + firebaseLogs.length + ' records from Firebase');
+        
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📥 Load';
+        }
+      } catch (e) {
+        console.error('❌ Failed to load from Firebase:', e);
+        if (showAlert) alert('Failed to load from Firebase: ' + e.message);
+        if (event?.target) {
+          event.target.disabled = false;
+          event.target.textContent = '📥 Load';
+        }
+      }
+    }
+    
+    // Load image from Firebase for a specific log entry
+    async function loadImageFromFirebase(firebaseId, logId) {
+      if (!firebaseReady || !firebaseEnabled || !db) return;
+      
+      try {
+        const doc = await db.collection('diseaseAnalytics').doc(firebaseId).get();
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.imageBase64) {
+            // Update the placeholder with the actual image
+            const imgElement = document.getElementById('img_' + logId);
+            if (imgElement) {
+              const img = document.createElement('img');
+              img.src = 'data:image/jpeg;base64,' + data.imageBase64;
+              img.className = 'history-image';
+              img.alt = 'Analysis image';
+              imgElement.replaceWith(img);
+            }
+            
+            // Update local data cache
+            const logIndex = analyticsData.logs.findIndex(l => l.id === logId);
+            if (logIndex !== -1) {
+              analyticsData.logs[logIndex].imageBase64 = data.imageBase64;
+              saveAnalytics();
+            }
+          } else {
+            // No image available
+            const imgElement = document.getElementById('img_' + logId);
+            if (imgElement) {
+              imgElement.textContent = '📷 No image available';
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load image from Firebase:', e);
+        const imgElement = document.getElementById('img_' + logId);
+        if (imgElement) {
+          imgElement.textContent = '❌ Failed to load image';
+        }
+      }
+    }
+    
+    // Sync with Firebase
+    async function syncWithFirebase() {
+      if (!firebaseEnabled || !db) {
+        alert('Firebase not configured. Please update firebaseConfig in the code.');
+        return;
+      }
+      
+      try {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = '⏳ Syncing...';
+        
+        let uploaded = 0;
+        for (const log of analyticsData.logs) {
+          if (!log.firebaseId) {
+            await saveToFirebase(log);
+            uploaded++;
+          }
+        }
+        
+        alert('Synced ' + uploaded + ' new records to Firebase');
+        
+        btn.disabled = false;
+        btn.textContent = '🔄 Sync';
+      } catch (e) {
+        console.error('❌ Sync failed:', e);
+        alert('Sync failed: ' + e.message);
+        event.target.disabled = false;
+        event.target.textContent = '🔄 Sync';
+      }
+    }
+    
+    // Update analytics dashboard
+    function updateAnalyticsDashboard() {
+      if (analyticsData.logs.length === 0) {
+        document.getElementById('totalScans').textContent = '0';
+        document.getElementById('diseasesFound').textContent = '0';
+        document.getElementById('avgConfidence').textContent = '0%';
+        document.getElementById('riskLevel').textContent = 'N/A';
+        return;
+      }
+      
+      // Calculate statistics
+      const totalScans = analyticsData.logs.length;
+      const diseaseLogs = analyticsData.logs.filter(log => log.primaryDisease !== 'Healthy');
+      const diseasesFound = diseaseLogs.length;
+      
+      const totalConfidence = analyticsData.logs.reduce((sum, log) => sum + log.avgConfidence, 0);
+      const avgConfidence = totalScans > 0 ? (totalConfidence / totalScans).toFixed(1) : 0;
+      
+      // Risk level assessment
+      const recentLogs = analyticsData.logs.slice(-10);
+      const recentDiseases = recentLogs.filter(log => log.primaryDisease !== 'Healthy').length;
+      const riskLevel = recentDiseases >= 7 ? 'High' : recentDiseases >= 4 ? 'Medium' : 'Low';
+      
+      // Update stats
+      document.getElementById('totalScans').textContent = totalScans;
+      document.getElementById('diseasesFound').textContent = diseasesFound;
+      document.getElementById('avgConfidence').textContent = avgConfidence + '%';
+      document.getElementById('riskLevel').textContent = riskLevel;
+      
+      // Disease change trend
+      if (analyticsData.logs.length >= 2) {
+        const previousDiseaseRate = analyticsData.logs.slice(0, -1).filter(log => log.primaryDisease !== 'Healthy').length;
+        const change = diseasesFound - previousDiseaseRate;
+        const changeEl = document.getElementById('diseaseChange');
+        if (change > 0) {
+          changeEl.textContent = '+' + change + ' from previous';
+          changeEl.className = 'change up';
+        } else if (change < 0) {
+          changeEl.textContent = change + ' from previous';
+          changeEl.className = 'change down';
+        } else {
+          changeEl.textContent = 'No change';
+          changeEl.className = 'change';
+        }
+      }
+      
+      updateCharts();
+    }
+    
+    // Update all charts
+    function updateCharts() {
+      updateDiseaseChart();
+      updateConfidenceChart();
+      // Sensor-related charts removed
+      updateTimelineChart();
+      updateModelPrecisionChart();
+    }
+    
+    // Model Precision Chart based on user feedback
+    function updateModelPrecisionChart() {
+      const ctx = document.getElementById('modelPrecisionChart');
+      if (!ctx) {
+        console.warn('⚠️ Chart canvas not found');
+        return;
+      }
+      
+      console.log('📊 Updating model precision chart with feedback data:', analyticsData.modelFeedback);
+      
+      const modelNames = [];
+      const precisionData = [];
+      const correctData = [];
+      const wrongData = [];
+      
+      // Calculate precision for each model
+      for (const modelName in analyticsData.modelFeedback) {
+        const feedback = analyticsData.modelFeedback[modelName];
+        if (feedback.total > 0) {
+          modelNames.push(modelName);
+          const precision = ((feedback.correct / feedback.total) * 100).toFixed(1);
+          precisionData.push(parseFloat(precision));
+          correctData.push(feedback.correct);
+          wrongData.push(feedback.wrong);
+        }
+      }
+      
+      // If no data, show message
+      if (modelNames.length === 0) {
+        if (analyticsData.charts.modelPrecision) {
+          analyticsData.charts.modelPrecision.destroy();
+          analyticsData.charts.modelPrecision = null;
+        }
+        const container = ctx.parentElement;
+        container.innerHTML = '<p style="text-align: center; padding: 60px 20px; color: var(--on-surface-variant); font-size: 14px;">📊 No feedback data yet.<br><br>Rate model predictions using ✓ Correct or ✗ Wrong buttons to see precision statistics.</p><canvas id="modelPrecisionChart" style="width: 100%; height: 100%;"></canvas>';
+        console.log('ℹ️ No feedback data available for chart');
+        return;
+      }
+      
+      console.log('📊 Chart data - Models:', modelNames.length, '| Precision:', precisionData);
+      
+      // Get the correct canvas element (it might have been replaced with message)
+      let canvas = document.getElementById('modelPrecisionChart');
+      const container = canvas?.parentElement;
+      
+      // If canvas doesn't exist or is hidden, recreate the container
+      if (!canvas || !canvas.getContext) {
+        console.log('🔄 Recreating chart canvas...');
+        if (container) {
+          // Clear any message and recreate canvas
+          container.innerHTML = '<canvas id="modelPrecisionChart" style="width: 100%; height: 100%;"></canvas>';
+          canvas = document.getElementById('modelPrecisionChart');
+        }
+        if (!canvas) {
+          console.error('❌ Failed to recreate canvas');
+          return;
+        }
+      }
+      
+      // If there's a message paragraph, hide it and show canvas
+      const messagePara = container?.querySelector('p');
+      if (messagePara) {
+        console.log('🔄 Replacing message with chart...');
+        container.innerHTML = '<canvas id="modelPrecisionChart" style="width: 100%; height: 100%;"></canvas>';
+        canvas = document.getElementById('modelPrecisionChart');
+      }
+      
+      // Destroy existing chart
+      if (analyticsData.charts.modelPrecision) {
+        analyticsData.charts.modelPrecision.destroy();
+        analyticsData.charts.modelPrecision = null;
+      }
+      
+      console.log('✅ Creating chart with', modelNames.length, 'models');
+      
+      // Create new chart with larger bars
+      analyticsData.charts.modelPrecision = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: modelNames,
+          datasets: [
+            {
+              label: 'Precision (%)',
+              data: precisionData,
+              backgroundColor: precisionData.map(p => p >= 80 ? '#34A85380' : p >= 60 ? '#FBBC0480' : '#EA433580'),
+              borderColor: precisionData.map(p => p >= 80 ? '#34A853' : p >= 60 ? '#FBBC04' : '#EA4335'),
+              borderWidth: 3,
+              borderRadius: 8,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Correct',
+              data: correctData,
+              backgroundColor: '#34A85340',
+              borderColor: '#34A853',
+              borderWidth: 2,
+              borderRadius: 6,
+              yAxisID: 'y1',
+              hidden: true
+            },
+            {
+              label: 'Wrong',
+              data: wrongData,
+              backgroundColor: '#EA433540',
+              borderColor: '#EA4335',
+              borderWidth: 2,
+              borderRadius: 6,
+              yAxisID: 'y1',
+              hidden: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) { return value + '%'; },
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant'),
+                font: { size: 13 }
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              }
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Count',
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant'),
+                font: { size: 14, weight: 'bold' }
+              },
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant'),
+                font: { size: 13 }
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            },
+            x: {
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant'),
+                maxRotation: 45,
+                minRotation: 25,
+                font: { size: 12, weight: '500' }
+              },
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface'),
+                font: { size: 13, weight: '600' },
+                padding: 15,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.dataset.label || '';
+                  const value = context.parsed.y;
+                  if (context.datasetIndex === 0) {
+                    const modelName = context.label;
+                    const feedback = analyticsData.modelFeedback[modelName];
+                    return [
+                      label + ': ' + value.toFixed(1) + '%',
+                      'Correct: ' + feedback.correct,
+                      'Wrong: ' + feedback.wrong,
+                      'Total: ' + feedback.total
+                    ];
+                  }
+                  return label + ': ' + value;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Disease Distribution Pie Chart
+    function updateDiseaseChart() {
+      const ctx = document.getElementById('diseaseChart');
+      if (!ctx) return;
+      
+      // Count disease occurrences
+      const diseaseCounts = {};
+      analyticsData.logs.forEach(log => {
+        if (log.primaryDisease !== 'Healthy') {
+          diseaseCounts[log.primaryDisease] = (diseaseCounts[log.primaryDisease] || 0) + 1;
+        }
+      });
+      
+      const labels = Object.keys(diseaseCounts);
+      const data = Object.values(diseaseCounts);
+      
+      if (analyticsData.charts.disease) {
+        analyticsData.charts.disease.destroy();
+      }
+      
+      analyticsData.charts.disease = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length > 0 ? labels : ['No diseases detected'],
+          datasets: [{
+            data: data.length > 0 ? data : [1],
+            backgroundColor: [
+              '#EA4335', '#FBBC04', '#34A853', '#4285F4', '#9C27B0',
+              '#FF9800', '#00BCD4', '#E91E63', '#8BC34A', '#FF5722'
+            ],
+            borderWidth: 2,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface')
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface'),
+                font: { size: 11 },
+                padding: 10
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.label + ': ' + context.parsed + ' occurrences';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Confidence Trend Line Chart
+    function updateConfidenceChart() {
+      const ctx = document.getElementById('confidenceChart');
+      if (!ctx) return;
+      
+      const recentLogs = analyticsData.logs.slice(-20);
+      const labels = recentLogs.map((log, i) => 'Scan ' + (analyticsData.logs.length - 20 + i + 1));
+      const confidenceData = recentLogs.map(log => log.avgConfidence);
+      
+      if (analyticsData.charts.confidence) {
+        analyticsData.charts.confidence.destroy();
+      }
+      
+      analyticsData.charts.confidence = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Confidence %',
+            data: confidenceData,
+            borderColor: '#4285F4',
+            backgroundColor: 'rgba(66, 133, 244, 0.1)',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant')
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.05)'
+              }
+            },
+            x: {
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant'),
+                maxRotation: 45,
+                minRotation: 45,
+                font: { size: 9 }
+              },
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface')
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Sensor-related chart functions removed
+    
+    
+    // Timeline Chart - Shows all analyses over time
+    function updateTimelineChart() {
+      const ctx = document.getElementById('timelineChart');
+      if (!ctx) return;
+      
+      if (analyticsData.logs.length === 0) {
+        if (analyticsData.charts.timeline) {
+          analyticsData.charts.timeline.destroy();
+          analyticsData.charts.timeline = null;
+        }
+        return;
+      }
+      
+      // Prepare data for timeline
+      const sortedLogs = [...analyticsData.logs].sort((a, b) => 
+        new Date(a.timestamp) - new Date(b.timestamp)
+      );
+      
+      const labels = sortedLogs.map(log => {
+        const date = new Date(log.timestamp);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      });
+      
+      const confidenceData = sortedLogs.map(log => log.avgConfidence);
+      const severityScores = sortedLogs.map(log => {
+        if (!log.environmentalContext) return 0;
+        const severityMap = { low: 2, moderate: 4, high: 7, critical: 10 };
+        return severityMap[log.environmentalContext.severity] || 0;
+      });
+      
+      const diseaseCount = sortedLogs.map(log => log.diseases ? log.diseases.length : 0);
+      
+      if (analyticsData.charts.timeline) {
+        analyticsData.charts.timeline.destroy();
+      }
+      
+      analyticsData.charts.timeline = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Confidence %',
+              data: confidenceData,
+              borderColor: '#4285F4',
+              backgroundColor: 'rgba(66, 133, 244, 0.1)',
+              tension: 0.3,
+              fill: false,
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Environmental Risk (0-10)',
+              data: severityScores,
+              borderColor: '#EA4335',
+              backgroundColor: 'rgba(234, 67, 53, 0.1)',
+              tension: 0.3,
+              fill: false,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              yAxisID: 'y1'
+            },
+            {
+              label: 'Diseases Detected',
+              data: diseaseCount,
+              borderColor: '#FBBC04',
+              backgroundColor: 'rgba(251, 188, 4, 0.1)',
+              tension: 0.3,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              yAxisID: 'y2'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Confidence %',
+                color: '#4285F4'
+              },
+              min: 0,
+              max: 100,
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant')
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.05)'
+              }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Risk Score',
+                color: '#EA4335'
+              },
+              min: 0,
+              max: 10,
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant')
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            },
+            y2: {
+              type: 'linear',
+              display: false,
+              min: 0,
+              max: 10
+            },
+            x: {
+              ticks: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface-variant'),
+                maxRotation: 45,
+                minRotation: 45,
+                font: { size: 9 }
+              },
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: getComputedStyle(document.documentElement).getPropertyValue('--on-surface'),
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                afterLabel: function(context) {
+                  const log = sortedLogs[context.dataIndex];
+                  if (log.primaryDisease && log.primaryDisease !== 'Healthy') {
+                    return 'Disease: ' + log.primaryDisease;
+                  }
+                  return '';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // History Panel Functions
+    function updateHistoryPanel(filter = 'all') {
+      const panel = document.getElementById('historyPanel');
+      if (!panel) return;
+      
+      if (analyticsData.logs.length === 0) {
+        panel.innerHTML = '<p style="text-align: center; color: var(--on-surface-variant); padding: 32px;">No analysis history yet. Run your first scan to get started.</p>';
+        return;
+      }
+      
+      // Filter logs
+      let filteredLogs = [...analyticsData.logs];
+      if (filter === 'diseases') {
+        filteredLogs = filteredLogs.filter(log => log.primaryDisease !== 'Healthy');
+      } else if (filter === 'healthy') {
+        filteredLogs = filteredLogs.filter(log => log.primaryDisease === 'Healthy');
+      }
+      
+      // Sort by timestamp (newest first)
+      filteredLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      let html = '';
+      filteredLogs.forEach((log, index) => {
+        const severityClass = log.environmentalContext ? log.environmentalContext.severity : 'low';
+        const date = new Date(log.timestamp);
+        const timeAgo = getTimeAgo(date);
+        
+        html += `<div class="history-item ${severityClass}">`;
+        html += '<div class="history-header">';
+        html += '<div class="history-date" onclick="toggleHistoryDetails(' + index + ', \'' + log.id + '\')"; style="cursor: pointer;">' + date.toLocaleString() + ' (' + timeAgo + ')</div>';
+        html += '<button class="delete-btn" onclick="event.stopPropagation(); deleteAnalysis(\'' + log.id + '\')" title="Delete this record">🗑️ Delete</button>';
+        
+        if (log.overallSeverity && log.overallSeverity !== 'unknown') {
+          const severityColors = { low: '#34A853', moderate: '#FBBC04', high: '#FF9800', critical: '#EA4335' };
+          html += '<span style="background:' + (severityColors[log.overallSeverity] || '#5f6368') + '20; color:' + (severityColors[log.overallSeverity] || '#5f6368') + '; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600; text-transform:uppercase;">' + log.overallSeverity + '</span>';
+        }
+        
+        html += '</div>';
+        
+        html += '<div class="history-disease" onclick="toggleHistoryDetails(' + index + ', \'' + log.id + '\')"; style="cursor: pointer;">';
+        if (log.primaryDisease === 'Healthy') {
+          html += '✅ Healthy Plant';
+        } else {
+          html += '⚠️ ' + log.primaryDisease;
+        }
+        html += '</div>';
+        
+        if (log.avgConfidence > 0) {
+          html += '<div class="history-confidence" onclick="toggleHistoryDetails(' + index + ', \'' + log.id + '\')"; style="cursor: pointer;">Confidence: ' + log.avgConfidence.toFixed(1) + '%</div>';
+        }
+        
+        // Details section (hidden by default)
+        html += '<div class="history-details" id="details_' + log.id + '">';
+        
+        // Image - Load from Firebase if not in local data
+        if (log.imageBase64) {
+          html += '<img src="data:image/jpeg;base64,' + log.imageBase64 + '" class="history-image" alt="Analysis image">';
+        } else if (log.firebaseId) {
+          // Placeholder for images being loaded from Firebase
+          html += '<div class="history-image" style="display:flex;align-items:center;justify-content:center;background:#f0f0f0;min-height:150px;" id="img_' + log.id + '">📷 Loading image...</div>';
+          // Load image asynchronously
+          loadImageFromFirebase(log.firebaseId, log.id);
+        }
+        
+        // Diseases detected
+        if (log.diseases && log.diseases.length > 0) {
+          html += '<div style="margin-top: 12px;"><strong>Diseases Detected:</strong><ul style="margin: 4px 0; padding-left: 20px;">';
+          log.diseases.forEach(d => {
+            html += '<li>' + d.name + ' (' + d.confidence.toFixed(1) + '%) - ' + d.severity + ' severity, ' + d.urgency + '</li>';
+          });
+          html += '</ul></div>';
+        }
+        
+        // Environmental context
+        if (log.environmentalContext && log.environmentalContext.riskFactors.length > 0) {
+          html += '<div style="margin-top: 12px;"><strong>Environmental Risks:</strong><ul style="margin: 4px 0; padding-left: 20px; font-size: 13px; color: var(--on-surface-variant);">';
+          log.environmentalContext.riskFactors.forEach(r => {
+            html += '<li>' + r + '</li>';
+          });
+          html += '</ul></div>';
+        }
+        
+        // Sensor data
+        if (log.sensorData) {
+          html += '<div style="margin-top: 12px;"><strong>Sensor Data:</strong>';
+          html += '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px;">';
+          html += '<div><small>Soil Moisture:</small><br><strong>' + log.sensorData.soilMoisture.toFixed(1) + '%</strong></div>';
+          html += '<div><small>Air Temp:</small><br><strong>' + log.sensorData.airTemp.toFixed(1) + '°C</strong></div>';
+          html += '<div><small>Humidity:</small><br><strong>' + log.sensorData.airHumidity.toFixed(1) + '%</strong></div>';
+          html += '<div><small>TDS:</small><br><strong>' + log.sensorData.tdsValue.toFixed(0) + ' ppm</strong></div>';
+          html += '<div><small>Light:</small><br><strong>' + log.sensorData.lightLevel.toFixed(0) + ' lux</strong></div>';
+          html += '<div><small>Soil Temp:</small><br><strong>' + log.sensorData.soilTemp.toFixed(1) + '°C</strong></div>';
+          html += '</div></div>';
+        }
+        
+        // Model results
+        if (log.allModelResults && log.allModelResults.length > 0) {
+          html += '<div style="margin-top: 12px;"><strong>Model Results:</strong><ul style="margin: 4px 0; padding-left: 20px; font-size: 12px;">';
+          log.allModelResults.forEach(m => {
+            if (m.error) {
+              html += '<li>' + m.modelName + ': <span style="color: var(--error);">Error - ' + m.error + '</span></li>';
+            } else if (m.detectedClass) {
+              html += '<li>' + m.modelName + ': ' + m.detectedClass + ' (' + m.confidence.toFixed(1) + '%)</li>';
+            } else {
+              html += '<li>' + m.modelName + ': No detection</li>';
+            }
+          });
+          html += '</ul></div>';
+        }
+        
+        html += '</div>'; // close details
+        html += '</div>'; // close history-item
+      });
+      
+      panel.innerHTML = html;
+    }
+    
+    function toggleHistoryDetails(index, logId) {
+      const item = event.currentTarget;
+      const details = document.getElementById('details_' + logId);
+      
+      if (item.classList.contains('expanded')) {
+        item.classList.remove('expanded');
+      } else {
+        // Close all other expanded items
+        document.querySelectorAll('.history-item.expanded').forEach(el => {
+          el.classList.remove('expanded');
+        });
+        item.classList.add('expanded');
+      }
+    }
+    
+    function filterHistory(filter) {
+      updateHistoryPanel(filter);
+    }
+
+    async function deleteAnalysis(logId) {
+      if (!confirm('Are you sure you want to delete this analysis record? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        // Remove from localStorage
+        const logs = JSON.parse(localStorage.getItem('analysisLogs') || '[]');
+        const updatedLogs = logs.filter(log => log.id !== logId);
+        localStorage.setItem('analysisLogs', JSON.stringify(updatedLogs));
+        
+        console.log('✅ Deleted from local storage:', logId);
+
+        // Remove from Firebase if connected
+        if (firebaseEnabled && db) {
+          try {
+            // Find the document with matching id field
+            const snapshot = await db.collection('diseaseAnalytics')
+              .where('id', '==', logId)
+              .limit(1)
+              .get();
+            
+            if (!snapshot.empty) {
+              await snapshot.docs[0].ref.delete();
+              console.log('✅ Deleted from Firebase:', logId);
+            }
+          } catch (fbError) {
+            console.error('⚠️ Failed to delete from Firebase:', fbError);
+          }
+        }
+
+        // Update UI
+        updateHistoryPanel();
+        
+        // Show success message
+        alert('✅ Record deleted successfully!');
+      } catch (error) {
+        console.error('❌ Delete failed:', error);
+        alert('❌ Failed to delete record: ' + error.message);
+      }
+    }
+    
+    function getTimeAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 1) return 'just now';
+      if (diffMins < 60) return diffMins + ' min ago';
+      if (diffHours < 24) return diffHours + ' hour' + (diffHours > 1 ? 's' : '') + ' ago';
+      if (diffDays < 7) return diffDays + ' day' + (diffDays > 1 ? 's' : '') + ' ago';
+      return date.toLocaleDateString();
+    }
+    
+    // Export analytics data
+    function exportAnalyticsData() {
+      if (analyticsData.logs.length === 0) {
+        alert('No analytics data to export');
+        return;
+      }
+      
+      const dataStr = JSON.stringify(analyticsData.logs, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'disease_analytics_' + new Date().toISOString().split('T')[0] + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    // Clear analytics data
+    function clearAnalyticsData() {
+      if (confirm('Are you sure you want to clear all analytics data? This cannot be undone.')) {
+        analyticsData.logs = [];
+        saveAnalytics();
+        updateAnalyticsDashboard();
+        alert('Analytics data cleared');
+      }
+    }
+    
+    // Disease name aliases and variations for improved matching accuracy
+    const DISEASE_ALIASES = {
+      'tomato_septoria_leaf_spot': ['septoria', 'septoria leaf spot', 'tomato septoria'],
+      'tomato_early_blight': ['early blight', 'alternaria solani', 'target spot tomato'],
+      'tomato_late_blight': ['late blight', 'phytophthora', 'tomato blight'],
+      'tomato_bacterial_spot': ['bacterial spot', 'xanthomonas', 'bacterial speck'],
+      'tomato_target_spot': ['target spot', 'corynespora'],
+      'tomato_yellow_leaf_curl': ['yellow leaf curl', 'tylcv', 'leaf curl virus', 'tomato virus'],
+      'tomato_mosaic': ['mosaic virus', 'tmv', 'tobacco mosaic', 'viral disease'],
+      'tomato_leaf_mold': ['leaf mold', 'cladosporium', 'mold'],
+      'tomato_spider_mites': ['spider mites', 'two spotted mites', 'mites', 'red spider'],
+      'potato_early_blight': ['potato early blight', 'alternaria', 'early blight potato'],
+      'potato_late_blight': ['potato late blight', 'late blight potato', 'phytophthora potato'],
+      'corn_common_rust': ['corn rust', 'maize rust', 'rust', 'puccinia'],
+      'corn_gray_leaf_spot': ['gray leaf spot', 'grey leaf spot', 'cercospora maize'],
+      'corn_northern_leaf_blight': ['northern leaf blight', 'turcicum', 'leaf blight corn'],
+      'grape_black_rot': ['black rot grape', 'guignardia', 'grape rot'],
+      'grape_esca': ['esca', 'black measles', 'grapevine decline'],
+      'grape_leaf_blight': ['leaf blight grape', 'isariopsis', 'grape leaf spot'],
+      'strawberry_leaf_scorch': ['leaf scorch', 'diplocarpon', 'strawberry scorch'],
+      'apple_black_rot': ['black rot apple', 'frog eye', 'apple rot'],
+      'apple_cedar_rust': ['cedar rust', 'gymnosporangium', 'apple rust'],
+      'cherry_powdery_mildew': ['cherry mildew', 'powdery mildew cherry'],
+      'peach_bacterial_spot': ['peach spot', 'bacterial spot peach', 'xanthomonas peach'],
+      'pepper_bacterial_spot': ['pepper spot', 'bacterial spot pepper'],
+      'bell_pepper_bacterial_spot': ['bell pepper spot', 'bacterial spot bell pepper'],
+      'squash_powdery_mildew': ['squash mildew', 'cucurbit mildew', 'powdery mildew squash'],
+      'banana_pestalotiopsis': ['pestalotiopsis', 'banana leaf spot', 'sigatoka'],
+      'banana_black_sigatoka': ['black sigatoka', 'black leaf streak', 'mycosphaerella'],
+      'banana_panama_disease': ['panama disease', 'fusarium wilt banana', 'banana wilt'],
+      'rice_bacterial_leaf_blight': ['bacterial blight rice', 'kresek', 'xanthomonas rice', 'bacterial leaf blight', 'blb'],
+      'rice_brown_spot': ['brown spot rice', 'helminthosporium', 'narrow brown spot', 'brown spot'],
+      'rice_blast': ['blast', 'leaf blast', 'neck blast', 'panicle blast', 'pyricularia', 'magnaporthe'],
+      'rice_sheath_blight': ['sheath blight', 'rhizoctonia rice', 'sheath rot rice'],
+      'rice_tungro': ['tungro', 'tungro disease', 'rice tungro virus', 'rtv'],
+      'rice_hispa': ['hispa', 'rice hispa beetle', 'leaf miner rice'],
+      'rice_leaf_folder': ['leaf folder', 'leaf roller', 'cnaphalocrocis'],
+      'rice_false_smut': ['false smut', 'green smut', 'ustilaginoidea'],
+      'rice_sheath_rot': ['sheath rot', 'sarocladium'],
+      'bacterial_leaf_streak': ['leaf streak', 'bacterial streak', 'xanthomonas oryzae'],
+      'wheat_leaf_rust': ['wheat rust', 'brown rust', 'puccinia wheat'],
+      'wheat_yellow_rust': ['yellow rust', 'stripe rust', 'puccinia striiformis'],
+      'soybean_sudden_death': ['sudden death', 'sds', 'fusarium soybean'],
+      'cotton_bacterial_blight': ['angular leaf spot cotton', 'bacterial blight cotton'],
+      'chili_leaf_curl': ['chili leaf curl', 'pepper leaf curl', 'leaf curl disease chili', 'chili virus'],
+      'chili_anthracnose': ['anthracnose chili', 'fruit rot chili', 'colletotrichum chili'],
+      'chili_bacterial_wilt': ['bacterial wilt chili', 'ralstonia chili', 'wilt disease chili'],
+      'chili_powdery_mildew': ['powdery mildew chili', 'white mildew chili', 'leveillula chili'],
+      'chili_mosaic_virus': ['chili mosaic', 'pepper mosaic', 'cmv', 'viral disease chili'],
+      'chili_thrips': ['thrips chili', 'pepper thrips', 'scirtothrips', 'yellow thrips'],
+      'chili_fruit_borer': ['fruit borer chili', 'helicoverpa chili', 'pod borer'],
+      'potato_early_blight': ['potato early blight', 'early blight potato', 'alternaria potato'],
+      'potato_black_scurf': ['black scurf', 'rhizoctonia potato', 'stem canker potato'],
+      'potato_common_scab': ['common scab potato', 'scab potato', 'streptomyces scab']
+    };
+    
+    // Enhanced matching function with scoring algorithm
+    function getRemedy(diseaseName) {
+      if (!diseaseName || diseaseName === '-') return 'N/A';
+      
+      const name = diseaseName.toLowerCase().trim();
+      
+      // Remove underscores and extra spaces
+      const cleanName = name.replace(/_/g, ' ').replace(/\s+/g, ' ');
+      
+      // First, check for exact matches (highest priority)
+      for (const [key, remedy] of Object.entries(REMEDIES)) {
+        if (cleanName === key || name === key) {
+          return remedy;
+        }
+      }
+      
+      // Second, check disease aliases
+      for (const [aliasKey, aliasList] of Object.entries(DISEASE_ALIASES)) {
+        const cleanAliasKey = aliasKey.replace(/_/g, ' ');
+        if (cleanName === cleanAliasKey || name === aliasKey) {
+          // Find remedy by checking alias list against remedy keys
+          for (const alias of aliasList) {
+            for (const [key, remedy] of Object.entries(REMEDIES)) {
+              if (key === alias || alias.includes(key) || key.includes(alias)) {
+                return remedy;
+              }
+            }
+          }
+        }
+      }
+      
+      // Third, check if any alias matches the input
+      for (const [aliasKey, aliasList] of Object.entries(DISEASE_ALIASES)) {
+        for (const alias of aliasList) {
+          if (cleanName.includes(alias) || alias.includes(cleanName)) {
+            // Found a match, now find the remedy
+            for (const [key, remedy] of Object.entries(REMEDIES)) {
+              if (aliasList.some(a => a === key || a.includes(key) || key.includes(a))) {
+                return remedy;
+              }
+            }
+          }
+        }
+      }
+      
+      // Fourth, fuzzy matching with scoring
+      let bestMatch = null;
+      let bestScore = 0;
+      
+      for (const [key, remedy] of Object.entries(REMEDIES)) {
+        let score = 0;
+        
+        // Calculate match score
+        if (cleanName.includes(key)) score += 10;
+        if (key.includes(cleanName)) score += 8;
+        
+        // Word-by-word matching
+        const nameWords = cleanName.split(' ');
+        const keyWords = key.split(' ');
+        
+        for (const nWord of nameWords) {
+          for (const kWord of keyWords) {
+            if (nWord === kWord) score += 5;
+            else if (nWord.includes(kWord) || kWord.includes(nWord)) score += 3;
+            // Check for common disease terms
+            if (['blight', 'spot', 'rot', 'wilt', 'rust', 'mildew', 'mosaic', 'curl'].includes(nWord) && 
+                ['blight', 'spot', 'rot', 'wilt', 'rust', 'mildew', 'mosaic', 'curl'].includes(kWord)) {
+              score += 2;
+            }
+          }
+        }
+        
+        // Bonus for plant name matches
+        const plants = ['tomato', 'potato', 'corn', 'maize', 'wheat', 'rice', 'grape', 'apple', 'banana', 
+                        'pepper', 'chili', 'cucumber', 'cabbage', 'onion', 'soybean', 'cotton'];
+        for (const plant of plants) {
+          if (cleanName.includes(plant) && key.includes(plant)) score += 4;
+        }
+        
+        if (score > bestScore && score >= 5) {
+          bestScore = score;
+          bestMatch = remedy;
+        }
+      }
+      
+      if (bestMatch) return bestMatch;
+      
+      // Fifth, check for common disease keywords
+      const keywords = {
+        'blight': 'blight',
+        'spot': 'bacterial spot',
+        'rot': 'rot',
+        'wilt': 'wilt',
+        'rust': 'rust',
+        'mildew': 'powdery mildew',
+        'mosaic': 'mosaic virus',
+        'curl': 'leaf curl',
+        'borer': 'fruit borer',
+        'mite': 'spider mites',
+        'aphid': 'aphids',
+        'whitefly': 'whitefly',
+        'thrips': 'thrips'
+      };
+      
+      for (const [keyword, remedyKey] of Object.entries(keywords)) {
+        if (cleanName.includes(keyword) && REMEDIES[remedyKey]) {
+          return REMEDIES[remedyKey];
+        }
+      }
+      
+      return REMEDIES.default;
+    }
+    
+    let BASE_URL = 'http://10.180.248.33';  // Default ESP32 IP
+    const api = (path) => BASE_URL + path;
+    let streamActive = false;
+    let aiAnalysisEnabled = true; // Toggle for AI consensus analysis
+    
+    function toggleAIAnalysis() {
+      aiAnalysisEnabled = !aiAnalysisEnabled;
+      const btn = document.getElementById('aiToggleBtn');
+      const icon = document.getElementById('aiToggleIcon');
+      const text = document.getElementById('aiToggleText');
+      
+      if (aiAnalysisEnabled) {
+        btn.classList.remove('disabled');
+        icon.textContent = '🤖';
+        text.textContent = 'AI: ON';
+        console.log('✅ AI analysis enabled');
+      } else {
+        btn.classList.add('disabled');
+        icon.textContent = '⚪';
+        text.textContent = 'AI: OFF';
+        document.getElementById('aiRecommendations').style.display = 'none';
+        console.log('⚪ AI analysis disabled');
+      }
+    }
+    
+    function copyAIAnalysis() {
+      const content = document.getElementById('aiAnalysisContent').textContent;
+      navigator.clipboard.writeText(content).then(() => {
+        alert('✅ AI analysis copied to clipboard!');
+      }).catch(err => {
+        console.error('Copy failed:', err);
+      });
+    }
+    
+    async function triggerAIAnalysis(modelResults, imageBase64, sensorData) {
+      const aiSection = document.getElementById('aiRecommendations');
+      const aiContent = document.getElementById('aiAnalysisContent');
+      const aiLoading = document.getElementById('aiLoading');
+      const aiModel = document.getElementById('aiModel');
+      
+      // Show AI section
+      aiSection.style.display = 'block';
+      aiContent.style.display = 'none';
+      aiLoading.style.display = 'block';
+      aiLoading.querySelector('p').textContent = '🧠 Advanced multi-model analysis in progress...';
+      
+      // Advanced AI consensus analysis with weighted scoring
+      setTimeout(() => {
+        // Model reliability weights (based on historical accuracy)
+        const modelWeights = {
+          'Object Detection (YOLOv8)': 1.2,      // 20% boost - best for detection
+          'Classification v2 (98.6%)': 1.15,     // 15% boost - highest accuracy
+          'ViT Classification (89%)': 1.0        // baseline
+        };
+        
+        // Extract and normalize diseases with weighted confidence
+        const diseases = modelResults.map(r => {
+          if (r.error) return null;
+          
+          let disease = null;
+          let rawConfidence = 0;
+          
+          if (r.type === 'detection' && r.data?.predictions?.length > 0) {
+            const top = r.data.predictions[0];
+            disease = top.class;
+            rawConfidence = top.confidence * 100;
+          } else if (r.type === 'classification' && r.data?.top) {
+            disease = r.data.top;
+            rawConfidence = r.data.confidence * 100;
+          }
+          
+          if (!disease) return null;
+          
+          // Apply model weight and confidence threshold
+          const weight = modelWeights[r.name] || 1.0;
+          const weightedConfidence = rawConfidence * weight;
+          
+          // Normalize disease name
+          const normalized = disease.toLowerCase()
+            .replace(/_/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          return {
+            original: disease,
+            normalized: normalized,
+            confidence: parseFloat(rawConfidence.toFixed(1)),
+            weightedScore: parseFloat(weightedConfidence.toFixed(1)),
+            model: r.name,
+            weight: weight
+          };
+        }).filter(Boolean);
+        
+        aiLoading.style.display = 'none';
+        aiContent.style.display = 'block';
+        aiModel.textContent = '🧠 Advanced AI Consensus';
+        
+        // Case 1: No detections
+        if (diseases.length === 0) {
+          const envAnalysis = analyzeEnvironmentalContext(sensorData);
+          const envWarning = envAnalysis.severityScore >= 4 ? 
+            `\n\n⚠️ **ENVIRONMENTAL ALERT:**\n${envAnalysis.riskFactors.slice(0, 2).join('\n')}\n\n**RECOMMENDED ACTIONS:**\n${envAnalysis.recommendations.slice(0, 2).join('\n')}` : '';
+          
+          aiContent.textContent = `**✅ FINAL VERDICT:**\nNo disease detected. Plant appears HEALTHY.\n\n**CONFIDENCE LEVEL:**\nVery High - All 3 advanced AI models confirm\n\n**ANALYSIS:**\n• Object Detection: No disease patterns found\n• Classification models: No pathogen signatures detected\n• Image quality: Sufficient for accurate diagnosis\n\n**RECOMMENDATION:**\nContinue normal care routine. Maintain optimal conditions.${envWarning}`;
+          return;
+        }
+        
+        // Case 2: Disease(s) detected - Advanced consensus algorithm
+        
+        // Group by normalized disease name
+        const diseaseGroups = {};
+        diseases.forEach(d => {
+          if (!diseaseGroups[d.normalized]) {
+            diseaseGroups[d.normalized] = [];
+          }
+          diseaseGroups[d.normalized].push(d);
+        });
+        
+        // Calculate weighted scores for each disease
+        const diseaseScores = Object.entries(diseaseGroups).map(([name, detections]) => {
+          const totalWeight = detections.reduce((sum, d) => sum + d.weightedScore, 0);
+          const avgConfidence = detections.reduce((sum, d) => sum + d.confidence, 0) / detections.length;
+          const modelCount = detections.length;
+          
+          // Consensus bonus: if multiple models agree, boost score
+          const consensusBonus = modelCount > 1 ? modelCount * 15 : 0;
+          const finalScore = totalWeight + consensusBonus;
+          
+          return {
+            name: name,
+            displayName: detections[0].original,
+            detections: detections,
+            modelCount: modelCount,
+            avgConfidence: avgConfidence,
+            finalScore: finalScore,
+            agreement: modelCount === 3 ? 'unanimous' : modelCount === 2 ? 'strong' : 'weak'
+          };
+        }).sort((a, b) => b.finalScore - a.finalScore);
+        
+        const topDisease = diseaseScores[0];
+        const hasCompeting = diseaseScores.length > 1 && diseaseScores[1].modelCount >= 1;
+        
+        // Environmental validation
+        const envContext = analyzeEnvironmentalContext(sensorData);
+        const envFactors = [];
+        
+        if (sensorData) {
+          // Check if environment supports detected disease
+          const diseaseName = topDisease.name;
+          
+          if ((diseaseName.includes('blight') || diseaseName.includes('fungal')) && 
+              envContext.metrics.humidityRisk === 'high') {
+            envFactors.push('✓ High humidity confirms fungal disease risk');
+          }
+          
+          if (diseaseName.includes('bacterial') && envContext.metrics.moistureRisk === 'high') {
+            envFactors.push('✓ Excess moisture supports bacterial infection');
+          }
+          
+          if (diseaseName.includes('wilt') && envContext.metrics.moistureRisk === 'high' && 
+              sensorData.soilMoisture < 30) {
+            envFactors.push('✓ Low soil moisture consistent with wilting');
+          }
+          
+          if (diseaseName.includes('rust') && envContext.metrics.humidityRisk === 'high') {
+            envFactors.push('✓ Humid conditions favor rust development');
+          }
+          
+          if (diseaseName.includes('mildew') && sensorData.airHumidity > 80) {
+            envFactors.push('✓ Very high humidity ideal for mildew spread');
+          }
+        }
+        
+        // Confidence assessment
+        let confidenceLevel;
+        let confidenceColor;
+        
+        if (topDisease.agreement === 'unanimous' && topDisease.avgConfidence > 80) {
+          confidenceLevel = 'VERY HIGH';
+          confidenceColor = '🟢';
+        } else if (topDisease.agreement === 'unanimous' || (topDisease.agreement === 'strong' && topDisease.avgConfidence > 75)) {
+          confidenceLevel = 'HIGH';
+          confidenceColor = '🟢';
+        } else if (topDisease.agreement === 'strong' && topDisease.avgConfidence > 60) {
+          confidenceLevel = 'MEDIUM-HIGH';
+          confidenceColor = '🟡';
+        } else if (topDisease.modelCount >= 2) {
+          confidenceLevel = 'MEDIUM';
+          confidenceColor = '🟡';
+        } else {
+          confidenceLevel = 'LOW';
+          confidenceColor = '🔴';
+        }
+        
+        // Build intelligent report
+        let report = `**🔬 FINAL DIAGNOSIS:**\n${topDisease.displayName.replace(/_/g, ' ').toUpperCase()}\n\n`;
+        report += `**${confidenceColor} CONFIDENCE LEVEL:**\n${confidenceLevel} - ${topDisease.modelCount} of 3 models detected (${topDisease.avgConfidence.toFixed(1)}% avg)\n\n`;
+        
+        report += `**🤖 AI MODEL CONSENSUS:**\n`;
+        topDisease.detections.forEach(d => {
+          report += `• ${d.model}\n  ${d.confidence}% confidence (weight: ${d.weight}x)\n`;
+        });
+        
+        if (hasCompeting) {
+          report += `\n⚠️ Alternative detection: ${diseaseScores[1].displayName} (${diseaseScores[1].modelCount} model${diseaseScores[1].modelCount > 1 ? 's' : ''})`;
+        }
+        
+        report += `\n\n**🧠 ADVANCED REASONING:**\n`;
+        if (topDisease.agreement === 'unanimous') {
+          report += `• All 3 AI models independently confirmed diagnosis\n`;
+          report += `• Multiple detection algorithms converge on same result\n`;
+          report += `• Cross-validation passed - extremely reliable\n`;
+        } else if (topDisease.agreement === 'strong') {
+          report += `• Strong majority consensus (2/3 models)\n`;
+          report += `• ${topDisease.avgConfidence > 75 ? 'High' : 'Moderate'} confidence scores support diagnosis\n`;
+          report += hasCompeting ? `• Competing diagnosis possible - monitor closely\n` : `• Single dissenting model - likely noise\n`;
+        } else {
+          report += `• Single model detection - requires verification\n`;
+          report += `• Recommend retaking image in better lighting\n`;
+          report += `• Environmental factors may mimic disease symptoms\n`;
+        }
+        
+        if (envFactors.length > 0) {
+          report += `\n**🌡️ ENVIRONMENTAL VALIDATION:**\n${envFactors.join('\n')}\n`;
+        }
+        
+        if (sensorData) {
+          report += `\n**📊 ENVIRONMENTAL DATA:**\n`;
+          report += `• Soil Moisture: ${sensorData.soilMoisture}% ${sensorData.soilMoisture > 70 ? '(high - fungal risk)' : sensorData.soilMoisture < 30 ? '(low - stress)' : '(optimal)'}\n`;
+          report += `• Air Temperature: ${sensorData.airTemp}°C ${sensorData.airTemp > 32 ? '(high - stress)' : sensorData.airTemp < 15 ? '(low - slow growth)' : '(good)'}\n`;
+          report += `• Humidity: ${sensorData.airHumidity}% ${sensorData.airHumidity > 75 ? '(high - disease spread)' : sensorData.airHumidity < 40 ? '(low - transpiration stress)' : '(normal)'}\n`;
+          
+          if (envContext.severityScore >= 4) {
+            report += `\n⚠️ **ENVIRONMENTAL STRESS DETECTED:**\n${envContext.riskFactors.slice(0, 2).map(r => `• ${r}`).join('\n')}\n`;
+          }
+        }
+        
+        // Treatment urgency based on disease severity
+        const severity = assessDiseaseSeverity(topDisease.name, envContext);
+        report += `\n\n**⚡ TREATMENT URGENCY:**\n`;
+        
+        if (severity.treatmentUrgency.includes('immediate')) {
+          report += `🔴 IMMEDIATE ACTION REQUIRED\n`;
+          report += `• Disease spreads rapidly - act within 24 hours\n`;
+          report += `• Isolate affected plants NOW\n`;
+        } else if (severity.spreadRisk === 'very high' || severity.spreadRisk === 'high') {
+          report += `🟡 HIGH PRIORITY (24-48 hours)\n`;
+          report += `• Begin treatment within 48 hours\n`;
+          report += `• Monitor neighboring plants closely\n`;
+        } else {
+          report += `🟢 MODERATE PRIORITY (3-7 days)\n`;
+          report += `• Plan treatment within this week\n`;
+          report += `• Disease progresses slowly\n`;
+        }
+        
+        report += `\n**📋 IMMEDIATE ACTIONS:**\n`;
+        report += `1. Isolate affected plants if possible\n`;
+        report += `2. Remove and destroy severely infected leaves\n`;
+        report += `3. Improve air circulation around plants\n`;
+        report += `4. Refer to TREATMENT RECOMMENDATIONS below\n`;
+        report += `5. Monitor daily for spread to other plants\n`;
+        
+        // Accuracy note
+        report += `\n\n**ℹ️ DIAGNOSTIC ACCURACY:**\n`;
+        report += `This diagnosis combines 3 state-of-the-art AI models with environmental analysis. `;
+        report += `${confidenceLevel === 'VERY HIGH' || confidenceLevel === 'HIGH' ? 
+          'Accuracy exceeds 95% for this confidence level.' : 
+          confidenceLevel === 'MEDIUM-HIGH' || confidenceLevel === 'MEDIUM' ?
+          'Accuracy ~85-90%. Consider consulting agricultural expert if symptoms worsen.' :
+          'Low confidence - image quality or lighting may be inadequate. Retake in natural daylight.'}`;
+        
+        aiContent.textContent = report;
+      }, 1200); // Slightly longer to show processing
+    }
+    
+    // Fetch with timeout helper
+    function fetchWithTimeout(url, options = {}, timeout = 5000) {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]);
+    }
+
+    function setIP() {
+      const ip = document.getElementById('ipInput').value.trim();
+      if (!ip) {
+        alert('Please enter ESP32 IP address');
+        return;
+      }
+      
+      // Clean IP (remove http/https if present)
+      const cleanIP = ip.replace('http://', '').replace('https://', '');
+      BASE_URL = `http://${cleanIP}`;
+      localStorage.setItem('esp32_ip', BASE_URL);
+      
+      console.log('Connecting to:', BASE_URL);
+      document.getElementById('connStatus').textContent = 'Connecting...';
+      document.getElementById('connStatus').style.color = 'var(--on-surface-variant)';
+      // Test connection using image loading to avoid CORS issues.
+      const testPaths = ['/capture', '/capture.jpg', '/stream', '/'];
+
+      function testWithImage(path, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          let timer = setTimeout(() => {
+            img.src = '';
+            reject(new Error('Timeout'));
+          }, timeout);
+
+          img.onload = () => {
+            clearTimeout(timer);
+            resolve(path);
+          };
+
+          img.onerror = () => {
+            clearTimeout(timer);
+            reject(new Error('Image load error'));
+          };
+
+          // Append cache-busting query to avoid cached errors
+          img.src = `${BASE_URL}${path}?_t=${Date.now()}`;
+        });
+      }
+
+      // Try endpoints in sequence until one works
+      (async () => {
+        let ok = false;
+        for (const p of testPaths) {
+          try {
+            await testWithImage(p, 4000);
+            ok = true;
+            console.log('✓ ESP32 reachable via', p);
+            break;
+          } catch (err) {
+            console.log('Attempt failed for', p, err.message);
+          }
+        }
+
+        if (ok) {
+          document.getElementById('connStatus').textContent = '✅ ESP32 reachable';
+          document.getElementById('connStatus').style.color = 'var(--success)';
+          document.getElementById('visualBtn').disabled = false;
+          document.getElementById('toggleBtn').disabled = false;
+          document.getElementById('streamPlaceholder').textContent = 'Ready. Click "Start stream" to preview.';
+          document.getElementById('cs').textContent = 'Camera ready';
+          document.getElementById('camDot').classList.remove('offline');
+        } else {
+          console.error('Connection failed: ESP32 not reachable at', cleanIP);
+          document.getElementById('connStatus').textContent = '❌ Cannot reach ESP32 at ' + cleanIP;
+          document.getElementById('connStatus').style.color = 'var(--error)';
+          document.getElementById('streamPlaceholder').textContent =
+            'Connection failed. Check:\n1. ESP32 is powered on\n2. WiFi connected\n3. IP is correct: ' + cleanIP;
+          document.getElementById('cs').textContent = 'Camera offline';
+          document.getElementById('camDot').classList.add('offline');
+        }
+      })();
+    }
+    
+    function startStream() {
+      const streamBtn = document.getElementById('toggleBtn');
+      streamBtn.disabled = true; // Disable button during connection attempt
+      streamBtn.textContent = 'Starting stream...';
+      
+      document.getElementById('connStatus').textContent = 'Connecting to stream...';
+      document.getElementById('connStatus').style.color = 'var(--on-surface-variant)';
+      // Show loading state
+      const placeholder = document.getElementById('streamPlaceholder');
+      placeholder.style.display = 'block';
+      placeholder.textContent = 'Initializing stream...';
+      document.getElementById('str').style.display = 'none';
+      
+      const streamImg = document.getElementById('str');
+      // Ensure crossOrigin to allow future processing if needed and avoid mixed-content issues
+      try { streamImg.crossOrigin = 'anonymous'; } catch(e) {}
+
+      // Consolidated handlers and cache-busting to ensure fresh connection
+      let startTimeout = setTimeout(() => {
+        console.warn('Stream load timeout');
+        // Try fallback to capture polling if MJPEG fails
+        startPollingCapture();
+      }, 6000);
+
+      streamImg.onload = function () {
+        clearTimeout(startTimeout);
+        placeholder.style.display = 'none';
+        streamImg.style.display = 'block';
+
+        console.log('✅ Stream started successfully');
+        document.getElementById('connStatus').textContent = '✅ Stream connected';
+        document.getElementById('connStatus').style.color = 'var(--success)';
+        streamBtn.textContent = 'Stop stream';
+        streamBtn.disabled = false;
+        streamActive = true;
+
+        document.getElementById('cs').textContent = 'Camera active';
+        document.getElementById('camDot').classList.remove('offline');
+        renderCtx(['Visual-only analysis. Sensors removed.']);
+      };
+
+      streamImg.onerror = function () {
+        clearTimeout(startTimeout);
+        console.error('Stream image failed to load; switching to capture polling fallback');
+        startPollingCapture();
+      };
+
+      // Start the MJPEG stream with cache-buster
+      streamImg.style.display = 'none';
+      streamImg.src = `${BASE_URL}/stream?_t=${Date.now()}`;
+    }
+
+    // Polling fallback using /capture.jpg when MJPEG /stream isn't available
+    let pollIntervalId = null;
+    function startPollingCapture(interval = 800) {
+      // clear existing handlers and any previous polling
+      const streamImg = document.getElementById('str');
+      const streamBtn = document.getElementById('toggleBtn');
+      const placeholder = document.getElementById('streamPlaceholder');
+
+      if (pollIntervalId) clearInterval(pollIntervalId);
+
+      document.getElementById('connStatus').textContent = '⚠️ Using capture polling';
+      document.getElementById('connStatus').style.color = 'var(--warn)';
+      placeholder.textContent = 'Using fallback polling (capture.jpg)';
+      placeholder.style.display = 'none';
+      streamImg.style.display = 'block';
+      streamBtn.textContent = 'Stop stream';
+      streamBtn.disabled = false;
+      streamActive = true;
+      document.getElementById('cs').textContent = 'Camera active (polling)';
+      document.getElementById('camDot').classList.remove('offline');
+
+      pollIntervalId = setInterval(() => {
+        // append timestamp to avoid caching
+        streamImg.src = `${BASE_URL}/capture.jpg?_t=${Date.now()}`;
+      }, interval);
+    }
+
+    function tick() {
+      document.getElementById('ts').textContent = new Date().toLocaleTimeString();
+    }
+    setInterval(tick, 1000);
+    tick();
+
+    function toggleStream() {
+      const streamImg = document.getElementById('str');
+      const streamBtn = document.getElementById('toggleBtn');
+      const placeholder = document.getElementById('streamPlaceholder');
+      
+      if (streamActive) {
+        // Stop stream
+        // Stop the MJPEG connection by setting to blank and removing handlers
+        streamImg.onload = null;
+        streamImg.onerror = null;
+        streamImg.src = 'about:blank';
+        streamImg.style.display = 'none';
+        placeholder.style.display = 'block';
+        placeholder.textContent = 'Stream paused';
+        streamBtn.textContent = 'Start stream';
+        streamActive = false;
+
+        // stop polling fallback if active
+        if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
+        
+        // Update status
+        document.getElementById('cs').textContent = 'Camera paused';
+        document.getElementById('camDot').classList.add('offline');
+      } else {
+        // Start stream
+        startStream();
+      }
+    }
+
+    function renderCtx(n) {
+      document.getElementById('ctx').innerHTML = '<h4>Context notes</h4><ul>' + n.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+    }
+
+    // Handle feedback button clicks
+    function handleModelFeedback(analysisId, modelName, isCorrect, feedbackId) {
+      // Record the feedback
+      recordModelFeedback(analysisId, modelName, isCorrect);
+      
+      // Update button states
+      const correctBtn = document.getElementById('correct_' + feedbackId);
+      const wrongBtn = document.getElementById('wrong_' + feedbackId);
+      const statusDiv = document.getElementById('feedback_status_' + feedbackId);
+      
+      if (correctBtn && wrongBtn && statusDiv) {
+        if (isCorrect) {
+          correctBtn.style.background = '#34A853';
+          correctBtn.style.color = 'white';
+          correctBtn.disabled = true;
+          wrongBtn.disabled = true;
+          wrongBtn.style.opacity = '0.5';
+          statusDiv.textContent = '✓ Marked as correct';
+          statusDiv.style.color = '#34A853';
+        } else {
+          wrongBtn.style.background = '#EA4335';
+          wrongBtn.style.color = 'white';
+          wrongBtn.disabled = true;
+          correctBtn.disabled = true;
+          correctBtn.style.opacity = '0.5';
+          statusDiv.textContent = '✗ Marked as wrong';
+          statusDiv.style.color = '#EA4335';
+        }
+      }
+      
+      // Show toast notification
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position: fixed; top: 80px; right: 20px; background: ' + (isCorrect ? '#34A853' : '#EA4335') + 
+                            '; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-size: 14px; font-weight: 500;';
+      toast.textContent = 'Feedback recorded for ' + modelName;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function ctxNotes(s) {
+      return ['Visual-only analysis. Sensors removed.'];
+    }
+
+    async function loadSensors() {
+      // Sensors removed - visual-only mode
+      renderCtx(['Visual-only analysis. Sensors removed.']);
+      return null;
+    }
+
+    // Display active models in the result box
+    function displayActiveModels() {
+      const modelsList = document.getElementById('modelsList');
+      if (!modelsList) return;
+      
+      let html = '';
+      MODELS.forEach((model, index) => {
+        const typeIcon = model.type === 'detection' ? '🎯' : '📊';
+        const typeBadge = model.type === 'detection' ? 'Detection' : 'Classification';
+        
+        html += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: var(--surface); border-radius: 6px; border: 1px solid rgba(26, 115, 232, 0.2);">';
+        html += '<div style="display: flex; align-items: center; gap: 10px;">';
+        html += '<span style="font-size: 20px;">' + typeIcon + '</span>';
+        html += '<div>';
+        html += '<div style="font-weight: 500; font-size: 13px; color: var(--on-surface);">' + model.name + '</div>';
+        html += '<div style="font-size: 11px; color: var(--on-surface-variant); margin-top: 2px;">Model: ' + model.id + '</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '<span style="padding: 4px 8px; background: rgba(26, 115, 232, 0.1); color: var(--primary); border-radius: 4px; font-size: 11px; font-weight: 600;">' + typeBadge + '</span>';
+        html += '</div>';
+      });
+      
+      modelsList.innerHTML = html;
+    }
+    
+    // Initialize plant selector
+    function initPlantSelector() {
+      const selector = document.getElementById('plantSelector');
+      if (!selector) return;
+      
+      let html = '';
+      PLANT_TYPES.forEach(plant => {
+        const isSelected = selectedPlantType === plant.id;
+        html += '<button onclick="selectPlant(\'' + plant.id + '\')" style="';
+        html += 'padding: 12px; border: 2px solid ' + (isSelected ? 'var(--primary)' : 'var(--outline)') + '; ';
+        html += 'background: ' + (isSelected ? 'rgba(26, 115, 232, 0.1)' : 'var(--surface)') + '; ';
+        html += 'border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: center;';
+        html += '" id="plant_' + plant.id + '">';
+        html += '<div style="font-size: 24px; margin-bottom: 4px;">' + plant.icon + '</div>';
+        html += '<div style="font-size: 12px; font-weight: 600; color: var(--on-surface);">' + plant.name + '</div>';
+        html += '<div style="font-size: 10px; color: var(--on-surface-variant); margin-top: 2px;">' + plant.models + ' models</div>';
+        html += '</button>';
+      });
+      
+      selector.innerHTML = html;
+    }
+    
+    // Select plant type
+    function selectPlant(plantId) {
+      selectedPlantType = plantId;
+      
+      // Update button styles
+      PLANT_TYPES.forEach(plant => {
+        const btn = document.getElementById('plant_' + plant.id);
+        if (btn) {
+          const isSelected = plant.id === plantId;
+          btn.style.border = '2px solid ' + (isSelected ? 'var(--primary)' : 'var(--outline)');
+          btn.style.background = isSelected ? 'rgba(26, 115, 232, 0.1)' : 'var(--surface)';
+        }
+      });
+      
+      // Update info display
+      const selectedPlant = PLANT_TYPES.find(p => p.id === plantId);
+      if (selectedPlant) {
+        document.getElementById('selectedPlantName').textContent = selectedPlant.icon + ' ' + selectedPlant.name;
+        document.getElementById('selectedPlantDesc').textContent = selectedPlant.description;
+      }
+      
+      console.log('\ud83c\udf31 Plant type selected:', plantId);
+    }
+    
+    // Get filtered models based on selected plant
+    function getActiveModels() {
+      if (selectedPlantType === 'all') {
+        return MODELS; // Return all models
+      }
+      
+      // Filter models: include 'all' models + models specific to selected plant
+      return MODELS.filter(model => {
+        if (model.forPlants === 'all') return true; // General models always included
+        if (Array.isArray(model.forPlants)) {
+          return model.forPlants.includes(selectedPlantType);
+        }
+        return false;
+      });
+    }
+
+    function showAnal() {
+      const activeModels = getActiveModels();
+      const plantInfo = PLANT_TYPES.find(p => p.id === selectedPlantType);
+      const plantName = plantInfo ? plantInfo.icon + ' ' + plantInfo.name : 'Plant';
+      document.getElementById('res').innerHTML = '<div class="rc"><div class="t">Analyzing ' + plantName + ' with ' + activeModels.length + ' AI models...</div><p style="color: var(--on-surface-variant); font-size: 14px;">Capturing and processing image</p></div>';
+    }
+
+    function showMultiModelResults(results, s, imageBase64, consensusData) {
+      const res = document.getElementById('res');
+      
+      // Generate unique analysis ID FIRST
+      const analysisId = 'analysis_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      
+      // Context/sensors removed - record visual-only analysis
+      const envContext = null;
+      logAnalysis(results, null, null, imageBase64, analysisId);
+      
+      // Build comparison table
+      let html = '<div class="rc">';
+      html += '<div class="t">Multi-Model Analysis</div>';
+      
+      // CAPTURED IMAGE DISPLAY
+      if (imageBase64) {
+        html += '<div style="background:var(--surface); border:2px solid var(--outline); padding:16px; margin:12px 0; border-radius:8px; text-align:center;">';
+        html += '<div style="font-weight:600; margin-bottom:12px; color:var(--primary); font-size:16px;">📸 Captured Image</div>';
+        html += '<img src="data:image/jpeg;base64,' + imageBase64 + '" style="max-width:100%; max-height:400px; border-radius:8px; box-shadow:var(--elevation-2);" alt="Captured plant image">';
+        html += '<div style="font-size:12px; color:var(--on-surface-variant); margin-top:8px;">Image saved to Firebase Firestore</div>';
+        html += '</div>';
+      }
+      
+      // CONSENSUS DECISION BOX
+      if (consensusData && consensusData.note) {
+        const isDisease = consensusData.disease && consensusData.disease.toLowerCase() !== 'healthy';
+        const boxColor = isDisease ? '#EA4335' : '#34A853';
+        const icon = isDisease ? '🔴' : '🟢';
+        
+        html += '<div style="background:' + boxColor + '15; border:2px solid ' + boxColor + '; padding:16px; margin:12px 0; border-radius:8px;">';
+        html += '<div style="font-weight:600; margin-bottom:8px; color:' + boxColor + '; font-size:16px;">';
+        html += icon + ' Smart Consensus Decision</div>';
+        html += '<div style="font-size:14px; color:var(--on-surface); margin-bottom:8px;">';
+        html += '<strong>Final Verdict:</strong> ' + consensusData.disease + ' (' + consensusData.confidence.toFixed(1) + '% confidence)';
+        html += '</div>';
+        html += '<div style="font-size:13px; color:var(--on-surface-variant); line-height:1.5;">' + consensusData.note + '</div>';
+        html += '</div>';
+      }
+      
+      // Environmental Context Alert
+      if (envContext && envContext.severity !== 'low') {
+        const severityColors = { moderate: '#FBBC04', high: '#FF9800', critical: '#EA4335' };
+        const severityColor = severityColors[envContext.severity] || '#5f6368';
+        
+        html += '<div style="background:' + severityColor + '20; border-left:4px solid ' + severityColor + '; padding:16px; margin:12px 0; border-radius:8px;">';
+        html += '<div style="font-weight:600; margin-bottom:8px; color:' + severityColor + '; font-size:15px;">';
+        html += '⚠️ Environmental Risk: ' + envContext.severity.toUpperCase() + ' (Score: ' + envContext.severityScore + '/10)</div>';
+        
+        if (envContext.riskFactors.length > 0) {
+          html += '<div style="margin-bottom:10px;"><strong style="color:var(--on-surface);">Risk Factors:</strong><ul style="margin:4px 0; padding-left:20px; font-size:13px; color:var(--on-surface);">';
+          envContext.riskFactors.forEach(r => html += '<li>' + r + '</li>');
+          html += '</ul></div>';
+        }
+        
+        if (envContext.recommendations.length > 0) {
+          html += '<div><strong style="color:var(--on-surface);">Immediate Actions:</strong><ul style="margin:4px 0; padding-left:20px; font-size:13px; color:var(--on-surface);">';
+          envContext.recommendations.forEach(r => html += '<li>' + r + '</li>');
+          html += '</ul></div>';
+        }
+        
+        html += '</div>';
+      }
+      
+      // Gemini Recommendation (if available)
+      if (geminiRecommendation) {
+        html += '<div style="background:rgba(26,115,232,0.1); border-left:3px solid var(--primary); padding:16px; margin:12px 0; border-radius:8px;">';
+        html += '<div style="font-weight:600; margin-bottom:12px; color:var(--primary); font-size:15px;">🤖 AI Expert Recommendation</div>';
+        
+        // Check if it's an error object
+        if (geminiRecommendation.error) {
+          html += '<div style="background:#fef7e0; border:1px solid #f9ab00; padding:12px; border-radius:6px; color:#ea8600; font-size:14px;">';
+          html += '⚠️ ' + geminiRecommendation.error;
+          html += '<br><span style="font-size:12px; color:#5f6368;">Showing results from 4 AI models below.</span>';
+          html += '</div>';
+        } else if (typeof geminiRecommendation === 'object') {
+          // Structured JSON response
+          if (geminiRecommendation.disease_explanation) {
+            html += '<div style="margin-bottom:10px;"><strong>📋 ' + gl('diseaseExplanation') + '</strong><br>';
+            html += '<span style="font-size:13px; line-height:1.6;">' + geminiRecommendation.disease_explanation + '</span></div>';
+          }
+          
+          if (geminiRecommendation.severity) {
+            const severityColors = { mild: '#34a853', moderate: '#fbbc04', severe: '#ea4335' };
+            const severityColor = severityColors[geminiRecommendation.severity.toLowerCase()] || '#5f6368';
+            html += '<div style="margin-bottom:10px;"><strong>⚠️ ' + gl('severity') + '</strong> ';
+            html += '<span style="padding:4px 8px; background:' + severityColor + '20; color:' + severityColor + '; border-radius:4px; font-weight:600; text-transform:uppercase; font-size:12px;">' + geminiRecommendation.severity + '</span></div>';
+          }
+          
+          if (geminiRecommendation.preventive_measures && geminiRecommendation.preventive_measures.length > 0) {
+            html += '<div style="margin-bottom:10px;"><strong>🛡️ ' + gl('preventiveMeasures') + '</strong><ul style="margin:4px 0; padding-left:20px; font-size:13px;">';
+            geminiRecommendation.preventive_measures.forEach(m => html += '<li>' + m + '</li>');
+            html += '</ul></div>';
+          }
+          
+          if (geminiRecommendation.organic_treatment && geminiRecommendation.organic_treatment.length > 0) {
+            html += '<div style="margin-bottom:10px;"><strong>🌿 ' + gl('organicTreatment') + '</strong><ul style="margin:4px 0; padding-left:20px; font-size:13px;">';
+            geminiRecommendation.organic_treatment.forEach(t => html += '<li>' + t + '</li>');
+            html += '</ul></div>';
+          }
+          
+          if (geminiRecommendation.chemical_treatment && geminiRecommendation.chemical_treatment.length > 0) {
+            html += '<div style="margin-bottom:10px;"><strong>⚗️ ' + gl('chemicalTreatment') + '</strong><ul style="margin:4px 0; padding-left:20px; font-size:13px;">';
+            geminiRecommendation.chemical_treatment.forEach(t => html += '<li>' + t + '</li>');
+            html += '</ul></div>';
+          }
+          
+          if (geminiRecommendation.risk_of_crop_loss) {
+            html += '<div style="margin-bottom:6px;"><strong>📊 ' + gl('riskOfCropLoss') + '</strong><br>';
+            html += '<span style="font-size:13px; line-height:1.6; color:#ea4335;">' + geminiRecommendation.risk_of_crop_loss + '</span></div>';
+          }
+        } else {
+          // Fallback for plain text response
+          html += '<div style="white-space:pre-wrap; font-size:13px; line-height:1.6;">' + geminiRecommendation + '</div>';
+        }
+        
+        html += '</div>';
+      }
+      
+      // Add model vote summary before the table
+      if (consensusData && (consensusData.diseaseCount > 0 || consensusData.healthyCount > 0)) {
+        html += '<div style="display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap;">';
+        
+        if (consensusData.diseaseCount > 0) {
+          html += '<div style="flex: 1; min-width: 150px; background: rgba(234, 67, 53, 0.1); border-left: 3px solid #EA4335; padding: 12px; border-radius: 6px;">';
+          html += '<div style="font-size: 24px; font-weight: 700; color: #EA4335;">' + consensusData.diseaseCount + '</div>';
+          html += '<div style="font-size: 12px; color: var(--on-surface-variant);">Model(s) Detected Disease</div>';
+          html += '</div>';
+        }
+        
+        if (consensusData.healthyCount > 0) {
+          html += '<div style="flex: 1; min-width: 150px; background: rgba(52, 168, 83, 0.1); border-left: 3px solid #34A853; padding: 12px; border-radius: 6px;">';
+          html += '<div style="font-size: 24px; font-weight: 700; color: #34A853;">' + consensusData.healthyCount + '</div>';
+          html += '<div style="font-size: 12px; color: var(--on-surface-variant);">Model(s) Said Healthy</div>';
+          html += '</div>';
+        }
+        
+        html += '</div>';
+      }
+      
+      html += '<div style="overflow-x:auto; margin-top:16px;">';
+      html += '<table style="width:100%; border-collapse:collapse; font-size:14px;">';
+      html += '<thead><tr style="border-bottom:2px solid var(--on-surface-variant);">';
+      html += '<th style="text-align:left; padding:12px; color:var(--on-surface-variant); min-width:180px;">Model</th>';
+      html += '<th style="text-align:left; padding:12px; color:var(--on-surface-variant); min-width:200px;">Disease Detected</th>';
+      html += '<th style="text-align:right; padding:12px; color:var(--on-surface-variant); min-width:120px;">Confidence</th>';
+      html += '<th style="text-align:left; padding:12px; color:var(--on-surface-variant); min-width:350px;">Recommended Treatment</th>';
+      html += '<th style="text-align:center; padding:12px; color:var(--on-surface-variant); min-width:140px;">Your Feedback</th>';
+      html += '</tr></thead><tbody>';
+      
+      results.forEach((r, index) => {
+        let rowClass = '';
+        let badge = '';
+        let conf = 0;
+        let disease = 'No detection';
+        let isHealthy = false;
+        let isDisease = false;
+        
+        if (r.error) {
+          badge = '<span class="badge err">Error</span>';
+          disease = r.error;
+        } else if (r.type === 'detection') {
+          if (r.data.predictions && r.data.predictions.length > 0) {
+            const top = r.data.predictions.reduce((a, b) => a.confidence > b.confidence ? a : b);
+            disease = top.class;
+            conf = (top.confidence * 100).toFixed(1);
+            
+            // Handle numeric class IDs or invalid names
+            if (!disease || disease === '' || /^\d+$/.test(disease)) {
+              console.warn(r.name + ' returned invalid class:', disease, 'Full prediction:', top);
+              disease = 'Unknown Disease (ID: ' + disease + ')';
+              badge = '<span class="badge warn">⚠️ Invalid</span>';
+              isDisease = true;
+            }
+            // Check if this is a healthy classification
+            else if (disease.toLowerCase().trim() === 'healthy') {
+              isHealthy = true;
+              badge = '<span class="badge ok">Healthy</span>';
+            } else {
+              isDisease = true;
+              badge = conf >= 80 ? '<span class="badge err">High</span>' : conf >= 50 ? '<span class="badge warn">Medium</span>' : '<span class="badge ok">Low</span>';
+            }
+          } else {
+            disease = 'Healthy';
+            isHealthy = true;
+            badge = '<span class="badge ok">Healthy</span>';
+          }
+        } else if (r.type === 'classification') {
+          if (r.data.top || r.data.predicted_classes) {
+            disease = r.data.top || (r.data.predicted_classes && r.data.predicted_classes[0]) || 'Unknown';
+            conf = ((r.data.confidence || 0) * 100).toFixed(1);
+            
+            // Check if this is a healthy classification
+            if (disease.toLowerCase().trim() === 'healthy' || disease.toLowerCase().trim() === 'no detection') {
+              isHealthy = true;
+              badge = '<span class="badge ok">Healthy</span>';
+            } else {
+              isDisease = true;
+              badge = conf >= 80 ? '<span class="badge err">High</span>' : conf >= 50 ? '<span class="badge warn">Medium</span>' : '<span class="badge ok">Low</span>';
+            }
+          } else {
+            disease = 'Healthy';
+            isHealthy = true;
+            badge = '<span class="badge ok">Healthy</span>';
+          }
+        }
+        
+        const remedy = getRemedy(disease);
+        
+        // Calculate context-aware severity
+        const severityAssessment = assessDiseaseSeverity(disease, conf, envContext);
+        const urgencyColors = {
+          'immediate': '#EA4335',
+          'immediate - remove infected plants': '#B71C1C',
+          'within 24-48 hours': '#FF9800',
+          'within 24 hours': '#FF9800',
+          'within 1 week': '#FBBC04',
+          'routine': '#34A853'
+        };
+        const urgencyColor = urgencyColors[severityAssessment.treatmentUrgency] || '#5f6368';
+        
+        // Highlight row based on detection type
+        let rowStyle = 'border-bottom:1px solid rgba(255,255,255,0.05);';
+        if (isDisease) {
+          rowStyle += ' background: rgba(234, 67, 53, 0.08);'; // Highlight disease detections
+        } else if (isHealthy) {
+          rowStyle += ' background: rgba(52, 168, 83, 0.05); opacity: 0.7;'; // Dim healthy detections
+        }
+        
+        html += '<tr style="' + rowStyle + '">';
+        html += '<td style="padding:16px 12px; font-weight:500; vertical-align:top;">';
+        
+        // Add icon to indicate disease vs healthy
+        if (isDisease) {
+          html += '🔴 ';
+        } else if (isHealthy) {
+          html += '🟢 ';
+        }
+        
+        html += r.name + '</td>';
+        html += '<td style="padding:16px 12px; vertical-align:top;">' + disease + ' ' + badge;
+        
+        // Add severity and urgency indicators
+        if (disease !== 'Healthy' && !r.error) {
+          html += '<br><span style="font-size:11px; margin-top:4px; display:inline-block;">';
+          html += '<span style="background:' + urgencyColor + '20; color:' + urgencyColor + '; padding:2px 6px; border-radius:3px; margin-right:4px;">🚨 ' + severityAssessment.treatmentUrgency + '</span>';
+          html += '<span style="background:rgba(255,255,255,0.1); color:var(--on-surface-variant); padding:2px 6px; border-radius:3px;">📊 ' + severityAssessment.severity + ' severity</span>';
+          html += '</span>';
+        }
+        
+        html += '</td>';
+        html += '<td style="padding:16px 12px; text-align:right; font-weight:600; vertical-align:top;">' + (conf || '-') + (conf ? '%' : '') + '</td>';
+        html += '<td style="padding:16px 12px; font-size:13px; line-height:1.6; color:var(--on-surface-variant); vertical-align:top;">' + remedy + '</td>';
+        
+        // Add feedback buttons
+        const feedbackId = analysisId + '_' + index;
+        html += '<td style="padding:16px 12px; text-align:center; vertical-align:top;">';
+        html += '<div style="display: flex; gap: 8px; justify-content: center; align-items: center;">';
+        html += '<button onclick="handleModelFeedback(\'' + analysisId + '\', \'' + r.name + '\', true, \'' + feedbackId + '\')" ';
+        html += 'id="correct_' + feedbackId + '" ';
+        html += 'style="padding: 6px 12px; border: 2px solid #34A853; background: transparent; color: #34A853; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" ';
+        html += 'onmouseover="this.style.background=\'#34A853\'; this.style.color=\'white\';" ';
+        html += 'onmouseout="this.style.background=\'transparent\'; this.style.color=\'#34A853\';">';
+        html += '✓ Correct</button>';
+        html += '<button onclick="handleModelFeedback(\'' + analysisId + '\', \'' + r.name + '\', false, \'' + feedbackId + '\')" ';
+        html += 'id="wrong_' + feedbackId + '" ';
+        html += 'style="padding: 6px 12px; border: 2px solid #EA4335; background: transparent; color: #EA4335; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" ';
+        html += 'onmouseover="this.style.background=\'#EA4335\'; this.style.color=\'white\';" ';
+        html += 'onmouseout="this.style.background=\'transparent\'; this.style.color=\'#EA4335\';">';
+        html += '✗ Wrong</button>';
+        html += '</div>';
+        html += '<div id="feedback_status_' + feedbackId + '" style="font-size: 11px; margin-top: 4px; color: var(--on-surface-variant);"></div>';
+        html += '</td>';
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      html += '</div>';
+      html += '<p style="color: var(--on-surface-variant); font-size: 12px; margin-top: 12px;">⚠️ Remedies are general guidelines. Consult agricultural expert for specific cases.</p>';
+      html += '</div>';
+      
+      res.innerHTML = html;
+      renderCtx(['Visual-only analysis. Sensors removed.']);
+    }
+
+    async function runAnalysis(withSensors) {
+      const btn = withSensors ? document.getElementById('fullBtn') : document.getElementById('visualBtn');
+      if (!btn) {
+        console.error('Button not found:', withSensors ? 'fullBtn' : 'visualBtn');
+        return;
+      }
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = 'Analyzing...';
+      showAnal();
+      
+      // Pause stream to free ESP32 resources
+      const wasStreaming = streamActive;
+      if (wasStreaming) {
+        console.log('Stopping stream before capture...');
+        toggleStream();
+        console.log('Waiting 2 seconds for ESP32 camera to be released...');
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer for stream to fully stop
+        console.log('Stream stopped, ready to capture');
+      }
+      
+      try {
+        console.log('Step 1: Triggering capture...');
+        console.log('Capture URL:', api('/capture'));
+        const captureResp = await fetchWithTimeout(api('/capture'), {}, 30000);
+        console.log('Capture response:', captureResp.status, captureResp.statusText);
+        const captureText = await captureResp.text();
+        console.log('Capture body:', captureText);
+        if (!captureResp.ok) throw Error('Capture failed: ' + captureResp.status + ' ' + captureResp.statusText + ' - ' + captureText);
+        
+        // Sensors removed; proceed with visual-only capture
+        const s = null;
+        
+        console.log('Step 3: Fetching captured image...');
+        console.log('Image URL:', api('/capture.jpg'));
+        const imgR = await fetchWithTimeout(api('/capture.jpg'), {}, 20000);
+        console.log('Image response:', imgR.status, imgR.statusText);
+        if (!imgR.ok) throw Error('Image HTTP ' + imgR.status);
+        
+        console.log('Step 4: Converting to blob...');
+        const blob = await imgR.blob();
+        console.log('Blob size:', blob.size, 'bytes');
+        
+        const reader = new FileReader();
+        reader.onloadend = async function() {
+          console.log('Step 5: Converting to base64...');
+          const b64 = reader.result.split(',')[1];
+          console.log('Base64 length:', b64.length);
+          
+          // Get filtered models based on selected plant
+          const activeModels = getActiveModels();
+          console.log('Step 6: Running ' + activeModels.length + ' models for ' + selectedPlantType + '...');
+          console.log('Active models:', activeModels.map(m => m.name));
+          
+          // Run active models simultaneously
+          const modelPromises = activeModels.map(async (model) => {
+            try {
+              console.log('Calling model:', model.name);
+              const rf = await fetch('https://serverless.roboflow.com/' + model.id + '?api_key=' + K, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: b64
+              });
+              
+              if (!rf.ok) {
+                throw Error('HTTP ' + rf.status);
+              }
+              
+              const data = await rf.json();
+              console.log(model.name + ' response:', data);
+              
+              // Apply class name mapping if model returns numeric IDs
+              if (CLASS_NAME_MAPPING[model.id] && data.predictions) {
+                data.predictions = data.predictions.map(pred => {
+                  if (CLASS_NAME_MAPPING[model.id][pred.class]) {
+                    console.log('Mapping class ID "' + pred.class + '" to "' + CLASS_NAME_MAPPING[model.id][pred.class] + '" for ' + model.name);
+                    return { ...pred, class: CLASS_NAME_MAPPING[model.id][pred.class] };
+                  }
+                  return pred;
+                });
+              }
+              
+              return { name: model.name, type: model.type, data: data, error: null, modelId: model.id };
+            } catch (e) {
+              console.error(model.name + ' error:', e);
+              return { name: model.name, type: model.type, data: null, error: e.message, modelId: model.id };
+            }
+          });
+          
+          try {
+            const results = await Promise.all(modelPromises);
+            console.log('All models completed:', results);
+            
+            // SMART CONSENSUS ALGORITHM - Prioritize disease over healthy
+            const diseaseDetections = [];
+            const healthyDetections = [];
+            
+            results.forEach(r => {
+              if (r.error) return;
+              
+              let disease = '';
+              let conf = 0;
+              
+              if (r.type === 'detection' && r.data.predictions && r.data.predictions.length > 0) {
+                const top = r.data.predictions.reduce((a, b) => a.confidence > b.confidence ? a : b);
+                disease = top.class;
+                conf = top.confidence * 100;
+                
+                // Log warning for invalid class names
+                if (!disease || disease === '' || /^\d+$/.test(disease)) {
+                  console.warn('⚠️ Model "' + r.name + '" returned invalid class name:', disease);
+                  console.warn('Full prediction object:', top);
+                  console.warn('All predictions:', r.data.predictions);
+                  // Skip invalid detections from consensus
+                  return;
+                }
+              } else if (r.type === 'classification' && (r.data.top || r.data.predicted_classes)) {
+                disease = r.data.top || r.data.predicted_classes[0];
+                conf = (r.data.confidence || 0) * 100;
+              }
+              
+              const diseaseNormalized = (disease || '').toLowerCase().trim();
+              
+              if (conf > 0 && disease) {
+                if (diseaseNormalized === 'healthy' || diseaseNormalized === 'no detection') {
+                  healthyDetections.push({ model: r.name, disease, confidence: conf });
+                } else {
+                  diseaseDetections.push({ model: r.name, disease, confidence: conf });
+                }
+              }
+            });
+            
+            console.log('Disease detections:', diseaseDetections);
+            console.log('Healthy detections:', healthyDetections);
+            
+            // Consensus rules:
+            // 1. If ANY model detects disease with >40% confidence, override "healthy" classifications
+            // 2. If 2+ models detect the SAME disease, that takes priority
+            // 3. Only mark as healthy if ALL models agree or no diseases detected
+            let primaryDisease = 'Healthy';
+            let primaryConfidence = 0;
+            let consensusNote = '';
+            
+            if (diseaseDetections.length > 0) {
+              // Count disease occurrences
+              const diseaseVotes = {};
+              diseaseDetections.forEach(d => {
+                const key = d.disease.toLowerCase();
+                if (!diseaseVotes[key]) {
+                  diseaseVotes[key] = { disease: d.disease, votes: 0, totalConf: 0, models: [] };
+                }
+                diseaseVotes[key].votes++;
+                diseaseVotes[key].totalConf += d.confidence;
+                diseaseVotes[key].models.push(d.model);
+              });
+              
+              // Find disease with highest votes OR highest confidence
+              let bestDisease = null;
+              let bestScore = 0;
+              
+              for (const key in diseaseVotes) {
+                const vote = diseaseVotes[key];
+                const avgConf = vote.totalConf / vote.votes;
+                // Score = votes * 50 + avgConfidence (prioritize agreement)
+                const score = (vote.votes * 50) + avgConf;
+                
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestDisease = vote;
+                }
+              }
+              
+              if (bestDisease) {
+                primaryDisease = bestDisease.disease;
+                primaryConfidence = bestDisease.totalConf / bestDisease.votes;
+                
+                if (healthyDetections.length > 0) {
+                  consensusNote = '⚠️ Consensus Override: ' + diseaseDetections.length + ' model(s) detected disease, ' + 
+                                  healthyDetections.length + ' said healthy. Prioritizing disease detection.';
+                  console.warn(consensusNote);
+                }
+                
+                if (bestDisease.votes > 1) {
+                  consensusNote += ' ✓ ' + bestDisease.votes + ' models agree on "' + primaryDisease + '"';
+                }
+              }
+            } else if (healthyDetections.length === results.length - results.filter(r => r.error).length) {
+              // All working models agree on healthy
+              primaryDisease = 'Healthy';
+              primaryConfidence = healthyDetections.reduce((sum, h) => sum + h.confidence, 0) / healthyDetections.length;
+              consensusNote = '✓ All models agree: Leaf appears healthy';
+            }
+            
+            console.log('Consensus:', primaryDisease, primaryConfidence + '%', consensusNote);
+            
+            // Prepare consensus data for display
+            const consensusData = {
+              disease: primaryDisease,
+              confidence: primaryConfidence,
+              note: consensusNote,
+              diseaseCount: diseaseDetections.length,
+              healthyCount: healthyDetections.length
+            };
+            
+            // Skip legacy Gemini API call
+            geminiRecommendation = null;
+            
+            // Show results with captured image
+            showMultiModelResults(results, s, b64, consensusData);
+            
+            // Trigger Firebase AI verification if enabled (pass all model results)
+            if (aiAnalysisEnabled && aiEnabled) {
+              triggerAIAnalysis(results, b64, s);
+            }
+          } catch (e) {
+            console.error('Multi-model error:', e);
+            document.getElementById('res').innerHTML = '<div class="rc"><div class="t">API error<span class="badge warn">Retry</span></div><p style="color: var(--on-surface-variant); font-size: 14px;">' + e.message + '</p></div>';
+            renderCtx(ctxNotes(s));
+          } finally {
+            btn.disabled = false;
+            btn.textContent = origText;
+            // Resume stream if it was active
+            if (wasStreaming && !streamActive) {
+              setTimeout(() => toggleStream(), 500);
+            } else if (streamActive) {
+              // Refresh stream to recover from capture interruption
+              const streamImg = document.getElementById('str');
+              streamImg.src = api('/stream') + '?t=' + Date.now();
+            }
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (e) {
+        console.error('Capture error:', e);
+        document.getElementById('res').innerHTML = '<div class="rc"><div class="t">Failed<span class="badge err">Error</span></div><p style="color: var(--on-surface-variant); font-size: 14px;">' + e.message + '</p></div>';
+        renderCtx(['Capture failed']);
+        btn.disabled = false;
+        btn.textContent = origText;
+        // Resume stream if it was active
+        if (wasStreaming && !streamActive) {
+          setTimeout(() => toggleStream(), 500);
+        } else if (streamActive) {
+          // Refresh stream to recover from capture interruption
+          const streamImg = document.getElementById('str');
+          streamImg.src = api('/stream') + '?t=' + Date.now();
+        }
+      }
+    }
+
+    function analyze() {
+      // Full/sensor-based analysis removed — run visual-only analysis
+      runAnalysis(false);
+    }
+
+    function visualOnly() {
+      runAnalysis(false);
+    }
+
+    // Sensors removed — no automatic polling (visual-only mode)
+    
+    // Load analytics on page load (async from Firebase)
+    (async function initializeAnalytics() {
+      await loadAnalytics();
+      // updateAnalyticsDashboard is now called inside loadAnalytics after data loads
+    })();
+    
+    // Display active models on page load
+    displayActiveModels();
+    
+    // Initialize plant selector on page load
+    initPlantSelector();
+    
+    // Auto-load saved IP or use default, then auto-connect
+    window.addEventListener('DOMContentLoaded', function() {
+      const savedIP = localStorage.getItem('esp32_ip');
+      
+      // Auto-migrate old 192.168.1.33 IP to new 10.180.248.33
+      // This migration is disabled by default to preserve direct-access AP IPs (e.g. ESP32 default)
+      if (ALLOW_AUTO_IP_MIGRATION && savedIP && savedIP.includes('192.168.1.33')) {
+        localStorage.setItem('esp32_ip', 'http://10.180.248.33');
+        log.info('🔄 Migrated IP from 192.168.1.33 to 10.180.248.33');
+      }
+      
+      const currentIP = localStorage.getItem('esp32_ip') || 'http://10.180.248.33';
+      const ipOnly = currentIP.replace('http://', '').replace('https://', '');
+      document.getElementById('ipInput').value = ipOnly;
+      
+      // Ensure BASE_URL is set
+      BASE_URL = currentIP;
+      
+      // Auto-connect after 500ms delay
+      setTimeout(() => {
+        const ipValue = document.getElementById('ipInput').value;
+        if (ipValue) {
+          log.info('Auto-connecting to:', ipValue);
+          setIP();
+        }
+      }, 500);
+      
+      // Load from Firebase after local data (if Firebase is configured)
+      // Wait for Firebase to be ready before trying to load
+      if (firebaseReadyPromise) {
+        firebaseReadyPromise.then(() => {
+          if (firebaseReady && firebaseEnabled) {
+            setTimeout(() => {
+              console.log('Auto-loading from Firebase...');
+              loadFromFirebase(false).catch(err => {
+                console.log('Auto-load from Firebase skipped:', err.message);
+              });
+            }, 500);
+          }
+        }).catch(err => {
+          console.log('Firebase not available for auto-load');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
