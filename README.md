@@ -1,6 +1,6 @@
 # Smart Agricultural Disease Monitor (ESP32-CAM)
 
-This repository contains firmware and a web UI for an ESP32-CAM based smart agricultural disease monitoring system. The ESP32 streams camera frames, exposes capture endpoints, and forwards sensor data via MQTT to a web client which performs AI-based disease analysis.
+This repository contains firmware and a web UI for an ESP32-CAM based smart agricultural disease monitoring system. The ESP32 streams camera frames, exposes capture endpoints, and forwards sensor data via MQTT to a web client which performs AI-based disease analysis using backend as robuflow.
 
 ## Contents
 - ESP32 firmware: `ESP32_CAM_MASTER/ESP32_CAM_MASTER.ino`
