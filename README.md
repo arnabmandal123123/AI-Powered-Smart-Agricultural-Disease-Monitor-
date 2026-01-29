@@ -4,7 +4,6 @@ This repository contains firmware and a web UI for an ESP32-CAM based smart agri
 
 ## Contents
 - ESP32 firmware: `ESP32_CAM_MASTER/ESP32_CAM_MASTER.ino`
-- Arduino sensor slave: `arduino_slave/arduino_slave.ino`
 - Web UI: `index.html`
 
 ## Overview
@@ -65,7 +64,6 @@ Key design goals:
 
 ## Files of Interest
 - `ESP32_CAM_MASTER/ESP32_CAM_MASTER.ino` — main firmware (camera, HTTP server, MQTT, Serial handling)
-- `arduino_slave/arduino_slave.ino` — sensor reading and pump control (Serial output format described above)
 - `index.html` — web UI that connects to MQTT over WebSockets and performs AI analysis
 
 ## License
